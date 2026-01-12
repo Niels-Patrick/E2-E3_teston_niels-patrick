@@ -1,40 +1,29 @@
 import pickle
+import torch
+from src.brain import load_params
 from src.genetic_algorithm import GeneticTrainer
 
 
 def main():
     trainer = GeneticTrainer(
-        population_size=40,
-        elite_fraction=0.05,
-        mutation_rate=0.05,
-        mutation_std=0.2,
-        tournament_k=3,
+        population_size=64,
         games_per_eval=60,
-        play_second_probability=0.5,
-        opponent='random',
-        seed=42
+        mutation_rate=0.05,
+        mutation_std=0.15
     )
 
     print("Initializing population and starting evolution")
-    best_genome, history = trainer.run(
-                            generations=30,
-                            verbose_every=1,
-                            save_best_path="best_ttt_model.keras"
-                            )
+    best_genome = trainer.run(generations=40)
 
-    # Save genome and metadata so it's possible to reload easily
+    # Save best model
+    model = trainer.model.model
+    load_params(model, best_genome)
+    torch.save(model.state_dict(), "best_ttt_model.pt")
+
     with open("best_genome.pkl", "wb") as f:
-        pickle.dump({
-            'genome': best_genome,
-            'shapes': trainer.shapes,
-            "sizes": trainer.sizes
-        }, f)
+        pickle.dump(best_genome.cpu(), f)
 
-    print("Training done. Best fitness history (last 10):")
-    for g, fval in history[-10:]:
-        print(f"Gen {g}: {fval:.4f}")
-
-    print("Best model saved to './best_ttt_model' and './best_genome.pkl'.")
+    print("Training complete. Model saved as best_ttt_model.pt")
 
 
 if __name__ == "__main__":

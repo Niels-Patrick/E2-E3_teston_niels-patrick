@@ -209,3 +209,4 @@ __marimo__/
 # Models
 best_genome.pkl
 best_ttt_model.keras
+best_ttt_model.pt

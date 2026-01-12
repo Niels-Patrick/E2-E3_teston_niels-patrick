@@ -2,28 +2,33 @@
 The genetic algorithm to train and mutate an agent.
 """
 
+from typing import List
 import numpy as np
 import random
-import tensorflow as tf
 from src.brain import Brain
 from src.game_env import TicTacToe
-from src.player_wrappers import heuristic_player, model_player_factory, \
+from tqdm import tqdm
+import torch
+from src.brain import load_params
+from src.player_wrappers import find_threat_squares, model_player, \
     random_player
+
+
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(f"Using device: {DEVICE}")
 
 
 class GeneticTrainer:
     """Genetic algorithm to train agents"""
 
     def __init__(self,
-                 population_size: int = 50,
-                 elite_fraction: float = 0.05,
-                 mutation_rate: float = 0.02,
+                 population_size: int = 64,
+                 games_per_eval: int = 50,
+                 mutation_rate: float = 0.05,
                  mutation_std: float = 0.1,
+                 elite_fraction: float = 0.05,
                  tournament_k: int = 3,
-                 games_per_eval: int = 40,
-                 play_second_probability: int = 5,
-                 opponent: str = 'random',
-                 seed=None
+                 seed: int = 42
                  ) -> None:
         """
         Initializes the GeneticTrainer.
@@ -46,236 +51,130 @@ class GeneticTrainer:
                             ('random' or 'heuristic').
             seed: Optional random seed for reproducibility.
         """
-        if seed is not None:
-            np.random.seed(seed)
-            random.seed(seed)
-            tf.random.set_seed(seed)
+        random.seed(seed)
+        np.random.seed(seed)
+        torch.manual_seed(seed)
+
         self.population_size = population_size
-        self.elite_fraction = elite_fraction
+        self.games_per_eval = games_per_eval
         self.mutation_rate = mutation_rate
         self.mutation_std = mutation_std
+        self.elite_fraction = elite_fraction
         self.tournament_k = tournament_k
-        self.games_per_eval = games_per_eval
-        self.play_second_probability = play_second_probability
-        self.opponent = opponent  # 'random' or 'heuristic'
 
         # Building example model to get genome size
-        model = Brain()
-        self.model_template = model
-        weights = model.model.get_weights()
-        self.genome_0, self.shapes, self.sizes = model.weights_to_genome(
-                                                                weights
-                                                                )
-        self.genome_length = self.genome_0.size
+        self.model = Brain().to(DEVICE)
+        self.genome_size = sum(p.numel() for p in self.model.parameters())
 
-    def init_population(self):
-        # population: list of genomes (numpy arrays)
-        pop = []
-        # Initializes from Kaiming-like distribution around initial weights
-        for i in range(self.population_size):
-            g = np.random.normal(
-                loc=0.0,
-                scale=1.0,
-                size=self.genome_length
-                ).astype(np.float32)
-            g *= 0.5
-            pop.append(g)
+    def init_population(self) -> List[torch.Tensor]:
+        return [
+            torch.randn(self.genome_size, device=DEVICE) * 0.5
+            for _ in range(self.population_size)
+        ]
 
-        return pop
-
-    def evaluate_genome(self, genome, verbose=False):
+    def evaluate_genome(self, genome: torch.Tensor) -> float:
         """
         Returns fitness scalar. Evaluate by having model play games vs
         opponent(s).
         """
         # Creating model and loading genome
-        model = Brain()
-        weights = model.genome_to_weights(genome, self.shapes, self.sizes)
-        model.model.set_weights(weights)
-        player = model_player_factory(model.model)
+        model = self.model.model
+        load_params(model, genome)
 
-        if self.opponent == 'random':
-            opp_fn = random_player
-        else:
-            opp_fn = heuristic_player
-
-        wins = 0
-        draws = 0
-        losses = 0
-        games = self.games_per_eval
-
+        score = 0.0
         env = TicTacToe()
 
-        for g in range(games):
+        for _ in range(self.games_per_eval):
             env.reset()
-            # Randomly deciding if genome plays first or second
-            if random.random() < self.play_second_probability:
-                # Opponent moves first
-                first = opp_fn
-                second = player
-                first_mark = 1  # X
-                second_mark = -1  # O
-            else:
-                first = player
-                second = opp_fn
-                first_mark = 1
-                second_mark = -1
+            first = random.choice([True, False])
+            mark = 1 if first else -1
 
-            done = False
-            while not done:
+            while True:
                 # First player
-                if np.any(env.board == 0):
-                    move = first(env.board.copy(), first_mark)
-                    env.board[move] = first_mark
-                    winner = env.check_winner()
-                    if winner is not None:
-                        done = True
-                        break
+                threats = find_threat_squares(env.board, -mark)
+                move = model_player(model, env.board, mark, DEVICE)
+                env.board[move] = mark
+                if threats and move not in threats:
+                    score -= 0.2
+                result = env.check_winner()
+                if result is not None:
+                    break
 
                 # Second player
-                if np.any(env.board == 0):
-                    move = second(env.board.copy(), second_mark)
-                    env.board[move] = second_mark
-                    winner = env.check_winner()
-                    if winner is not None:
-                        done = True
-                        break
+                opp_move = random_player(env.board, -mark)
+                env.board[opp_move] = -mark
+                result = env.check_winner()
+                if result is not None:
+                    break
 
                 # Continuing loop
 
             # Evaluating result from the perspective of the genome player
-            final_winner = env.check_winner()
-            if final_winner == 0:
-                draws += 1
+            if result == mark:
+                score += 1.0
+            elif result == 0:
+                score += 0.5
+            else:
+                score -= 1.0
 
-            if final_winner is None:
-                draws += 1  # Shouldn't happen but counts as a draw
+        return score / self.games_per_eval
 
-            if final_winner == 1 or final_winner == -1:
-                # Determining which mark won, and if that was the genome player
-                genome_mark = -1
-                if first is player:
-                    genome_mark = 1
+    def tournament(self, pop, fitness):
+        indexes = np.random.choice(len(pop), self.tournament_k, replace=False)
+        best = max(indexes, key=lambda i: fitness[i])
 
-                if first is opp_fn:
-                    genome_mark = -1
-
-                if final_winner == genome_mark:
-                    wins += 1
-
-                if final_winner != genome_mark:
-                    losses += 1
-
-        # fitness: wins*1 + draws*0.5 normalized by games
-        fitness = (wins + 0.5 * draws) / games
-        if verbose:
-            print(f"Eval -> wins: {wins}, draws: {draws}, losses: {losses}, fitness: {fitness:.3f}")  # noqa
-
-        return fitness
-
-    def evaluate_population(self, population, verbose=False):
-        fitnesses = np.zeros(len(population), dtype=float)
-        for index, genome in enumerate(population):
-            fitnesses[index] = self.evaluate_genome(
-                                        genome,
-                                        verbose=verbose and index == 0
-                                        )
-
-        return fitnesses
-
-    def tournament_select(self, population, fitnesses):
-        """
-        Returns a single parent via tournament selection.
-        """
-        indexes = np.random.choice(
-            len(population),
-            size=self.tournament_k,
-            replace=False
-            )
-        best = indexes[0]
-
-        for index in indexes:
-            if fitnesses[index] > fitnesses[best]:
-                best = index
-
-        return population[best].copy()
+        return pop[best].clone()
 
     def crossover(self, a, b):
         """
         Single point crossover on genome arrays.
         """
-        if self.genome_length <= 1:
-            return a.copy(), b.copy()
+        point = random.randint(1, self.genome_size - 1)
 
-        point = np.random.randint(1, self.genome_length)
-        child1 = np.concatenate([a[:point], b[point:]])
-        child2 = np.concatenate([b[:point], a[point:]])
-        return child1, child2
+        return (
+            torch.cat([a[:point], b[point:]]),
+            torch.cat([b[:point], a[point:]])
+        )
 
     def mutate(self, genome):
         """
         Gaussian mutation applied per-gene with self.mutation_rate probability.
         """
-        mask = np.random.rand(self.genome_length) < self.mutation_rate
-        noise = np.random.normal(
-            loc=0.0,
-            scale=self.mutation_std,
-            size=self.genome_length
-            ).astype(np.float32)
-        genome[mask] += noise[mask]
+        mask = torch.rand(self.genome_size, device=DEVICE) < self.mutation_rate
+        genome[mask] += torch.randn(
+            mask.sum(), device=DEVICE
+            ) * self.mutation_std
+
         return genome
 
-    def run(self, generations=50, verbose_every=1, save_best_path=None):
-        pop = self.init_population()
-        best_history = []
+    def run(self, generations=50):
+        population = self.init_population()
 
-        for gen in range(1, generations + 1):
-            fitnesses = self.evaluate_population(
-                            pop,
-                            verbose=(gen % verbose_every == 0)
-                            )
+        for gen in tqdm(range(1, generations + 1)):
+            fitness = [self.evaluate_genome(g) for g in population]
             # Record best
-            best_index = int(np.argmax(fitnesses))
-            best_fitness = float(fitnesses[best_index])
-            best_genome = pop[best_index].copy()
-            best_history.append((gen, best_fitness))
-            if gen % verbose_every == 0 or gen == 1:
-                print(
-                    f"Gen {gen}/{generations} Best fitness: {best_fitness:.4f}"
-                    )
+            best_index = int(np.argmax(fitness))
+            print(f"Gen {gen} | Best fitness: {fitness[best_index]:.3f}")
 
             # Create next generation
             new_pop = []
             # Elitism
-            n_elite = max(1, int(self.elite_fraction * self.population_size))
-            elite_indexes = np.argsort(fitnesses)[-n_elite:]
-            for index in elite_indexes:
-                new_pop.append(pop[int(index)].copy())
+            elite_n = max(1, int(self.elite_fraction * self.population_size))
+            elite_index = np.argsort(fitness)[-elite_n:]
+
+            for index in elite_index:
+                new_pop.append(population[index].clone())
 
             # Fill rest
             while len(new_pop) < self.population_size:
-                parent1 = self.tournament_select(pop, fitnesses)
-                parent2 = self.tournament_select(pop, fitnesses)
+                parent1 = self.tournament(population, fitness)
+                parent2 = self.tournament(population, fitness)
                 child1, child2 = self.crossover(parent1, parent2)
-                child1 = self.mutate(child1)
+                new_pop.append(self.mutate(child1))
                 if len(new_pop) < self.population_size:
-                    new_pop.append(child1)
-                if len(new_pop) < self.population_size:
-                    child2 = self.mutate(child2)
-                    new_pop.append(child2)
+                    new_pop.append(self.mutate(child2))
 
-            pop = new_pop
+            population = new_pop
 
-            # Optionally save best
-            if save_best_path is not None:
-                # Save Keras model weights of current best
-                model = Brain()
-                weights = model.genome_to_weights(
-                                best_genome,
-                                self.shapes,
-                                self.sizes
-                                )
-                model.model.set_weights(weights)
-                model.model.save(save_best_path, include_optimizer=False)
-
-        return best_genome, best_history
+        best_genome = population[int(np.argmax(fitness))]
+        return best_genome

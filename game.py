@@ -1,7 +1,12 @@
 from typing import Any
-import keras
-from src.player_wrappers import model_player_factory
+import torch
+from src.brain import Brain
+from src.player_wrappers import model_player
 import numpy as np
+
+
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(f"Using device: {DEVICE}")
 
 
 def print_board(board: Any) -> None:
@@ -40,14 +45,13 @@ def human_move(board: Any) -> int:
 def play_human_vs_ai(model: Any) -> None:
     """
     Runs the Tic Tac Toe game.
-    
+
     :param model: The AI model to play against.
     :type model: Any
     """
     board = np.zeros(9, dtype=int)
     human_mark = 1  # You play as X
     ai_mark = -1  # AI plays as O
-    ai_player = model_player_factory(model)
 
     print("You are X (1st). AI is O (2nd).")
     print_board(board)
@@ -61,7 +65,7 @@ def play_human_vs_ai(model: Any) -> None:
             break
 
         # AI move
-        ai_move = ai_player(board.copy(), ai_mark)
+        ai_move = model_player(model, board.copy(), ai_mark, DEVICE)
         board[ai_move] = ai_mark
         print("\nAI plays:", ai_move)
         print_board(board)
@@ -109,5 +113,17 @@ def check_end(board: Any) -> bool:
 
 
 if __name__ == "__main__":
-    model = keras.models.load_model("best_ttt_model.keras")
+    state_dict = torch.load(
+        "best_ttt_model.pt",
+        map_location=DEVICE,
+        weights_only=True
+        )
+
+    new_state_dict = {}
+    for k, v in state_dict.items():
+        new_state_dict["model." + k] = v
+
+    model = Brain().to(DEVICE)
+    model.load_state_dict(new_state_dict)
+
     play_human_vs_ai(model)
