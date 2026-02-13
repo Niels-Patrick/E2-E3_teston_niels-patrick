@@ -94,13 +94,13 @@ def check_end(board: Any) -> bool:
     for line in lines:
         s = np.sum(line)
 
-        if s == 3:
-            print("You win!")
+        if s == -3:
+            print("AI wins!")
             print_board(board)
             return True
 
-        if s == -3:
-            print("AI wins!")
+        if s == 3:
+            print("You win!")
             print_board(board)
             return True
 
@@ -124,6 +124,6 @@ if __name__ == "__main__":
         new_state_dict["model." + k] = v
 
     model = Brain().to(DEVICE)
-    model.load_state_dict(new_state_dict)
+    model.load_state_dict(state_dict)
 
     play_human_vs_ai(model)

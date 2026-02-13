@@ -6,12 +6,12 @@ from typing import List
 import numpy as np
 import random
 from src.brain import Brain
-from src.game_env import TicTacToe
+from src.game_env import TicTacToe, check_winner
 from tqdm import tqdm
 import torch
 from src.brain import load_params
-from src.player_wrappers import find_threat_squares, model_player, \
-    random_player
+from src.player_wrappers import find_threat_squares, heuristic_player, \
+    model_player
 
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -65,6 +65,7 @@ class GeneticTrainer:
         # Building example model to get genome size
         self.model = Brain().to(DEVICE)
         self.genome_size = sum(p.numel() for p in self.model.parameters())
+        self.elite_models = []
 
     def init_population(self) -> List[torch.Tensor]:
         return [
@@ -78,7 +79,7 @@ class GeneticTrainer:
         opponent(s).
         """
         # Creating model and loading genome
-        model = self.model.model
+        model = Brain().to(DEVICE)
         load_params(model, genome)
 
         score = 0.0
@@ -90,23 +91,29 @@ class GeneticTrainer:
             mark = 1 if first else -1
 
             while True:
-                # First player
-                threats = find_threat_squares(env.board, -mark)
-                move = model_player(model, env.board, mark, DEVICE)
-                env.board[move] = mark
-                if threats and move not in threats:
-                    score -= 0.2
-                result = env.check_winner()
-                if result is not None:
-                    break
+                if first:
+                    # First player
+                    threats = find_threat_squares(env.board, -mark)
+                    move = model_player(model, env.board, mark, DEVICE)
+                    env.board[move] = mark
+                    if threats and move not in threats:
+                        score -= 0.5
+                    result = check_winner(env.board)
+                    if result is not None:
+                        break
+                else:
+                    # Second player
+                    """if self.elite_models != []:
+                        elite = random.choice(self.elite_models)
+                        opp_move = model_player(elite, env.board, -mark, DEVICE)
+                    else:"""
+                    opp_move = heuristic_player(env.board, -mark)
+                    env.board[opp_move] = -mark
+                    result = check_winner(env.board)
+                    if result is not None:
+                        break
 
-                # Second player
-                opp_move = random_player(env.board, -mark)
-                env.board[opp_move] = -mark
-                result = env.check_winner()
-                if result is not None:
-                    break
-
+                first = not first
                 # Continuing loop
 
             # Evaluating result from the perspective of the genome player
@@ -175,6 +182,11 @@ class GeneticTrainer:
                     new_pop.append(self.mutate(child2))
 
             population = new_pop
+
+            best_current_genome = population[int(np.argmax(fitness))]
+            model = Brain().to(DEVICE)
+            load_params(model, best_current_genome)
+            self.elite_models.append(model)
 
         best_genome = population[int(np.argmax(fitness))]
         return best_genome

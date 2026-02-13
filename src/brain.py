@@ -11,9 +11,9 @@ class Brain(nn.Module):
         super().__init__()
         self.model = nn.Sequential(
             nn.Linear(9, 27),
-            nn.ReLU(),
+            nn.Softplus(),
             nn.Linear(27, 27),
-            nn.ReLU(),
+            nn.Softplus(),
             nn.Linear(27, 9)
         )
 

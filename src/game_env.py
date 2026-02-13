@@ -17,23 +17,24 @@ class TicTacToe:
     def available_moves(self):
         return np.where(self.board == 0)[0]
 
-    def check_winner(self) -> bool:
-        b = self.board.reshape(3, 3)
-        lines = []
-        lines.extend(b)
-        lines.extend(b.T)
-        lines.append(np.diag(b))
-        lines.append(np.diag(np.fliplr(b)))
 
-        # Checking all rows, cols and diags to determine if there is a winner
-        for line in lines:
-            s = line.sum()
-            if s == 3:
-                return 1  # Player X wins
-            if s == -3:
-                return -1  # Player O wins
+def check_winner(board: np.array) -> int:
+    b = board.reshape(3, 3)
+    lines = []
+    lines.extend(b)
+    lines.extend(b.T)
+    lines.append(np.diag(b))
+    lines.append(np.diag(np.fliplr(b)))
 
-        if not np.any(self.board == 0):
-            return 0  # draw
+    # Checking all rows, cols and diags to determine if there is a winner
+    for line in lines:
+        s = line.sum()
+        if s == 3:
+            return 1  # Player X wins
+        if s == -3:
+            return -1  # Player O wins
 
-        return None  # Game not finished
+    if not np.any(board == 0):
+        return 0  # draw
+
+    return None  # Game not finished

@@ -1,7 +1,11 @@
 import pickle
 import torch
-from src.brain import load_params
+from src.brain import Brain, load_params
 from src.genetic_algorithm import GeneticTrainer
+
+
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(f"Using device: {DEVICE}")
 
 
 def main():
@@ -13,10 +17,10 @@ def main():
     )
 
     print("Initializing population and starting evolution")
-    best_genome = trainer.run(generations=40)
+    best_genome = trainer.run(generations=200)
 
     # Save best model
-    model = trainer.model.model
+    model = Brain().to(DEVICE)
     load_params(model, best_genome)
     torch.save(model.state_dict(), "best_ttt_model.pt")
 

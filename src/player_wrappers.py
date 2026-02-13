@@ -2,8 +2,10 @@
 Wrapper functions to manage players actions.
 """
 
+import random
 import numpy as np
 import torch
+from src.game_env import check_winner
 
 
 def random_player(board: np.array, mark: int) -> int:
@@ -21,6 +23,40 @@ def random_player(board: np.array, mark: int) -> int:
     move = int(np.random.choice(avail))
 
     return move
+
+
+def heuristic_player(board: np.array, mark: int) -> int:
+    """
+    Simulates a player who always win if possible, always block opponent if
+    necessary, otherwise plays randomly.
+
+    :param board: The current board disposition.
+    :type board: np.array
+    :param mark: The player's mark.
+    :type mark: int
+
+    :return: The player's next move.
+    :rtype: int
+    """
+    ran = random.randint(0, 100)
+
+    if ran < 50:
+        # 1. Win if possible
+        move = find_winning_move(board, mark)
+        if move is not None:
+            return move
+
+        # 2. Block opponent
+        move = find_winning_move(board, -mark)
+        if move is not None:
+            return move
+
+        # 3. Center
+        if board[4] == 0:
+            return 4
+
+    # 4. Random
+    return random_player(board, mark)
 
 
 def model_player(model, board, mark, device) -> int:
@@ -81,3 +117,28 @@ def find_threat_squares(board: np.array, mark: int) -> set:
                 threats.add(c)
 
     return threats
+
+
+def find_winning_move(board: np.array, mark: int) -> int:
+    """
+    Looks for a winning move in the current board disposition for a specific
+    player.
+
+    :param board: The current disposition of the board.
+    :type board: np.array
+    :param mark: The mark of the current player.
+    :type mark: int
+
+    :return: A winning move or nothing if there are none.
+    :rtype: int
+    """
+    for move in np.where(board == 0)[0]:
+        board[move] = mark
+
+        if check_winner(board) == mark:
+            board[move] = 0
+            return move
+
+        board[move] = 0
+
+    return None
