@@ -21,10 +21,6 @@ class Brain(nn.Module):
         return self.model(x)
 
 
-def flatten_params(model: nn.Module) -> torch.Tensor:
-    return torch.cat([p.data.flatten() for p in model.parameters()])
-
-
 def load_params(model: nn.Module, genome: torch.Tensor) -> None:
     index = 0
     for p in model.parameters():

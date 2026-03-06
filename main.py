@@ -1,34 +1,52 @@
-import pickle
-import torch
-from src.brain import Brain, load_params
-from src.genetic_algorithm import GeneticTrainer
+"""
+Main entry point for the backend TicTacToe model Flask API.
+
+This file contains the factory function to create the application as well as
+the entry point to execute the function.
+
+This file initializes the required configurations and starts the application.
+
+The routes' documentation is available on: http://127.0.0.1:5001/apidocs/
+"""
+
+import os
+import sys
+import eventlet
+
+from src.app.application import Application
+from src.app.config import AppConfig
 
 
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-print(f"Using device: {DEVICE}")
+eventlet.monkey_patch()
+
+# Adds the project root to the Python path
+PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, PROJECT_ROOT)
 
 
-def main():
-    trainer = GeneticTrainer(
-        population_size=64,
-        games_per_eval=60,
-        mutation_rate=0.05,
-        mutation_std=0.15
-    )
+def create_app() -> Application:
+    """
+    Factory function to create the application.
 
-    print("Initializing population and starting evolution")
-    best_genome = trainer.run(generations=200)
+    Returns:
+        application (Application): Application instance.
+    """
+    try:
+        application = Application(AppConfig())
+    except Exception as e:
+        print(f"Error while creating application: {str(e)}")
+        raise
 
-    # Save best model
-    model = Brain().to(DEVICE)
-    load_params(model, best_genome)
-    torch.save(model.state_dict(), "best_ttt_model.pt")
-
-    with open("best_genome.pkl", "wb") as f:
-        pickle.dump(best_genome.cpu(), f)
-
-    print("Training complete. Model saved as best_ttt_model.pt")
+    return application
 
 
-if __name__ == "__main__":
-    main()
+# Main entry point
+if __name__ == '__main__':
+    app = create_app()
+
+    app.socketio.run(
+        app.flask,
+        host=app.config.network_config.APP_HOST,
+        port=app.config.network_config.APP_PORT,
+        debug=True
+        )

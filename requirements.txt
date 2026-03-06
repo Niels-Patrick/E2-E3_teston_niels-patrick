@@ -1,2 +1,14 @@
 numpy
 tensorflow
+flask
+flask-jwt-extended
+sqlalchemy
+flask-sqlalchemy
+flasgger
+dotenv
+loguru
+eventlet
+marshmallow
+marshmallow-sqlalchemy
+cryptography
+bcrypt
