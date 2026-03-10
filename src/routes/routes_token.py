@@ -14,7 +14,7 @@ from flask_jwt_extended import decode_token, create_access_token, \
 from src.utils.functions_routes import check_token_validity, \
     get_token_from_header, parse_datetime_string
 from src.app.logger_manager import logger_manager
-from src.models.refresh_token import RefreshToken, get_refresh_token_by_id
+from src.models.refresh_tokens import RefreshToken, get_refresh_token_by_id
 from src.app.db_manager import db
 
 

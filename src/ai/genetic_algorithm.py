@@ -5,12 +5,12 @@ The genetic algorithm to train and mutate an agent.
 from typing import List
 import numpy as np
 import random
-from src.brain import Brain
-from src.game_env import TicTacToe, check_winner
+from src.ai.brain import Brain
+from src.ai.game_env import TicTacToe, check_winner
 from tqdm import tqdm
 import torch
-from src.brain import load_params
-from src.player_wrappers import find_threat_squares, heuristic_player, \
+from src.ai.brain import load_params
+from src.ai.player_wrappers import find_threat_squares, heuristic_player, \
     model_player
 
 
@@ -103,10 +103,12 @@ class GeneticTrainer:
                         break
                 else:
                     # Second player
-                    """if self.elite_models != []:
+                    """
+                    if self.elite_models != []:
                         elite = random.choice(self.elite_models)
                         opp_move = model_player(elite, env.board, -mark, DEVICE)
-                    else:"""
+                    else:
+                    """
                     opp_move = heuristic_player(env.board, -mark)
                     env.board[opp_move] = -mark
                     result = check_winner(env.board)

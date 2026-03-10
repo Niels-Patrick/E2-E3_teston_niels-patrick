@@ -1,7 +1,7 @@
 import pickle
 import torch
-from src.brain import Brain, load_params
-from src.genetic_algorithm import GeneticTrainer
+from src.ai.brain import Brain, load_params
+from src.ai.genetic_algorithm import GeneticTrainer
 
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")

@@ -5,7 +5,7 @@ Wrapper functions to manage players actions.
 import random
 import numpy as np
 import torch
-from src.game_env import check_winner
+from src.ai.game_env import check_winner
 
 
 def random_player(board: np.array, mark: int) -> int:

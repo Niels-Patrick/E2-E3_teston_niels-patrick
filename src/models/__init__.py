@@ -1,8 +1,10 @@
-from .players import Player
 from .users import User
+from .refresh_tokens import RefreshToken
+from .games import Game
 
 
 __all__ = [
-    "Player",
-    "User"
+    "User",
+    "RefreshToken",
+    "Game"
 ]

@@ -10,9 +10,8 @@ import uuid
 from flask import Blueprint, Response, jsonify, request
 from flask_jwt_extended import create_access_token, create_refresh_token, \
     decode_token, jwt_required
-from src.models.players import get_player_by_username
-from src.models.refresh_token import RefreshToken, \
-    get_refresh_token_by_id
+from src.models.refresh_tokens import RefreshToken, get_refresh_token_by_id
+from src.models.users import get_user_by_username
 from src.utils.functions_routes import get_token_from_header, verify_password
 from src.app.logger_manager import logger_manager
 from src.app.db_manager import db
@@ -62,7 +61,7 @@ def submit() -> Response:
         logger_manager.error("No data provided")
         return jsonify(message="Error: No data provided"), 400
 
-    user = get_player_by_username(data.get("username"))
+    user = get_user_by_username(data.get("username"))
 
     if not user:
         logger_manager.error("Invalid credentials")

@@ -5,45 +5,53 @@ This file contains the Marshmallow Schema for the User model.
 """
 
 from marshmallow import EXCLUDE, fields
+from src.models.schemas.utils import CamelCaseSQLAlchemyAutoSchema
 from src.models.users import User
-from src.models.schemas.schemas_players import CreatePlayerSchema, \
-    UpdatePlayerSchema, ReadPlayerSchema
 
 
-class CreateUserSchema(CreatePlayerSchema):
-    class Meta(CreatePlayerSchema.Meta):
+class CreateUserSchema(CamelCaseSQLAlchemyAutoSchema):
+    class Meta:
         model = User
         load_instance = True
         include_fk = True
         unknown = EXCLUDE
         exclude = (
-            "id_player",
+            "id_user",
+            "game_x",
+            "game_o"
             )
 
+    username = fields.String(required=True)
     password = fields.String(required=True)
     email = fields.String(required=True)
 
 
-class UpdateUserSchema(UpdatePlayerSchema):
-    class Meta(UpdatePlayerSchema.Meta):
+class UpdateUserSchema(CamelCaseSQLAlchemyAutoSchema):
+    class Meta:
         model = User
         load_instance = True
         include_fk = True
         unknown = EXCLUDE
         exclude = (
-            "id_player",
+            "id_user",
+            "game_x",
+            "game_o"
             )
 
+    username = fields.String()
     password = fields.String()
     email = fields.String()
 
 
-class ReadUserSchema(ReadPlayerSchema):
-    class Meta(ReadPlayerSchema.Meta):
+class ReadUserSchema(CamelCaseSQLAlchemyAutoSchema):
+    class Meta:
         model = User
         load_instance = True
         include_fk = True
 
     id_user = fields.UUID()
+    username = fields.String()
     password = fields.String()
     email = fields.String()
+    game_x = fields.Nested('ReadGameSchema')
+    game_o = fields.Nested('ReadGameSchema')

@@ -1,7 +1,7 @@
 from typing import Any
 import torch
-from src.brain import Brain
-from src.player_wrappers import model_player
+from src.ai.brain import Brain
+from src.ai.player_wrappers import model_player
 import numpy as np
 
 

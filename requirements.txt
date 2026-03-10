@@ -1,7 +1,7 @@
 numpy
-tensorflow
 flask
 flask-jwt-extended
+flask-socketio
 sqlalchemy
 flask-sqlalchemy
 flasgger

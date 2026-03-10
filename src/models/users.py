@@ -4,28 +4,96 @@ SQLAlchemy User model file.
 This file contains the SQLAlchemy User model as well as its functions.
 """
 
-from sqlalchemy import Column, String, Integer, ForeignKey
+import uuid
+from sqlalchemy import Column, String
+from sqlalchemy.dialects.postgresql import UUID
 from dataclasses import dataclass
-from src.models.players import Player
+from sqlalchemy.orm import relationship
+from src.app.logger_manager import logger_manager
 
 
 @dataclass
-class User(Player):
+class User:
     __tablename__ = 'users'
-    id_player = Column(
-        Integer,
-        ForeignKey("players.id_player"),
-        primary_key=True
+    id_user = Column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4
         )
+    username = Column(String(500), nullable=False)
     password = Column(String(500), nullable=False)
     email = Column(String(250), nullable=False)
 
-    def __init__(self, username: str, elo: int, email: str, password: str):
-        self.username = username
-        self.elo = elo
-        self.email = email
-        self.password = password
+    game_x = relationship(
+        "Game",
+        back_populates="user_x",
+        foreign_keys="Game.id_user_x"
+        )
+    game_o = relationship(
+        "Game",
+        back_populates="user_o",
+        foreign_keys="Game.id_user_o"
+        )
 
-    __mappers_args__ = {
-        "polymorphic_identity": "user"
-    }
+    def __init__(self, username: str, password: str, email: str):
+        self.username = username
+        self.password = password
+        self.email = email
+
+    def to_json(self) -> dict:
+        """
+        Returns a user's data as JSON.
+        """
+        json_user = {
+            "id_player": self.id_player,
+            "username": self.username,
+            "email": self.email
+        }
+
+        logger_manager.info("User's information successfully fetched")
+        return json_user
+
+
+def get_users() -> list[User]:
+    """
+    Gets a list of all of the users.
+
+    Returns:
+        users (list[User]): a list of all of the users.
+    """
+    try:
+        users = User.query.all()
+
+        logger_manager.info("Users successfully fetched")
+        return users
+    except Exception as e:
+        logger_manager.error(f"Error fetching users in database: {str(e)}")
+        raise
+
+
+def get_user_by_username(username: str) -> User:
+    """
+    Fetches a specific user from the database based on their unique username.
+    """
+    try:
+        user = User.query.filter_by(username=username).first()
+
+        logger_manager.info("User successfully fetched from database")
+        return user
+    except Exception as e:
+        logger_manager.error(f"Error fetching user in database: {str(e)}")
+        raise
+
+
+def get_user_by_id(id: uuid) -> User:
+    """
+    Fetches a specific user from the database based on their ID.
+    """
+    try:
+        user = User.query.filter_by(id=id).first()
+
+        logger_manager.info("User successfully fetched from database")
+        return user
+    except Exception as e:
+        logger_manager.error(f"Error fetching user in database: {str(e)}")
+        raise

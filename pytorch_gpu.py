@@ -6,13 +6,14 @@
 # 3. download bin, lib and include from
 # https://developer.nvidia.com/rdp/cudnn-archive
 
-# 4. copy paste in 
+# 4. copy paste in
 # C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.1
 
 # 5. Check PATH is added
 # C:\Program Files\NVIDIA GPU Computing Toolkit
 
-# pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+# pip install torch torchvision torchaudio --index-url
+# https://download.pytorch.org/whl/cu121
 
 import torch
 
@@ -31,7 +32,7 @@ def afficher_infos_gpu_pytorch():
     print(f"CUDA (GPU) disponible : {'✅ OUI' if cuda_disponible else '❌ NON'}")
 
     if not cuda_disponible:
-        print("Arrêt du diagnostic : CUDA non détecté. Veuillez vérifier les pilotes.")
+        print("Arrêt du diagnostic : CUDA non détecté. Veuillez vérifier les pilotes.")  # noqa
         return
 
     # 2. Nombre de GPU
@@ -60,7 +61,7 @@ def afficher_infos_gpu_pytorch():
         print(f"  Mémoire Mise en Cache : {memoire_en_cache_mb:.2f} Mo")
 
         # Capacité de calcul (important pour la compatibilité)
-        print(f"  Capacité de Calcul (sm) : {proprietes.major}.{proprietes.minor}") 
+        print(f"  Capacité de Calcul (sm) : {proprietes.major}.{proprietes.minor}")  # noqa
 
         print("-" * 35)
 
