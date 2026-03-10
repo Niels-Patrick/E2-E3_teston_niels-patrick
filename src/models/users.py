@@ -10,10 +10,11 @@ from sqlalchemy.dialects.postgresql import UUID
 from dataclasses import dataclass
 from sqlalchemy.orm import relationship
 from src.app.logger_manager import logger_manager
+from src.app.db_manager import db
 
 
 @dataclass
-class User:
+class User(db.Model):
     __tablename__ = 'users'
     id_user = Column(
         UUID(as_uuid=True),

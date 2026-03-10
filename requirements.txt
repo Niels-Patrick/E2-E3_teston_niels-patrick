@@ -12,3 +12,4 @@ marshmallow
 marshmallow-sqlalchemy
 cryptography
 bcrypt
+psycopg2

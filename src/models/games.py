@@ -22,38 +22,26 @@ class Game(db.Model):
     game_date = Column(Date, nullable=True)
     game_result = Column(String(50), nullable=True)
     moves = Column(Text, nullable=True)
-    id_event = Column(UUID, ForeignKey("events.id_event"), nullable=True)
-    id_opening = Column(UUID, ForeignKey("openings.id_opening"), nullable=True)
-    id_player_white = Column(
+    id_user_x = Column(
         UUID,
-        ForeignKey("players.id_player"),
+        ForeignKey("users.id_user"),
         nullable=True
         )
-    id_player_black = Column(
+    id_user_o = Column(
         UUID,
-        ForeignKey("players.id_player"),
+        ForeignKey("users.id_user"),
         nullable=True
         )
 
-    event = relationship(
-        "Event",
-        back_populates="game",
-        foreign_keys=[id_event]
+    user_x = relationship(
+        "User",
+        back_populates="game_x",
+        foreign_keys=[id_user_x]
         )
-    opening = relationship(
-        "Opening",
-        back_populates="game",
-        foreign_keys=[id_opening]
-        )
-    player_white = relationship(
-        "Player",
-        back_populates="game_white",
-        foreign_keys=[id_player_white]
-        )
-    player_black = relationship(
-        "Player",
-        back_populates="game_black",
-        foreign_keys=[id_player_black]
+    user_o = relationship(
+        "User",
+        back_populates="game_o",
+        foreign_keys=[id_user_o]
         )
 
     def __init__(
@@ -61,16 +49,12 @@ class Game(db.Model):
         game_date: Date,
         game_result: str,
         moves: list[str],
-        id_event: uuid,
-        id_opening: uuid,
         id_player_white: uuid,
         id_player_black: uuid
     ):
         self.game_date = game_date
         self.game_result = game_result
         self.moves = moves
-        self.id_event = id_event
-        self.id_opening = id_opening
         self.id_player_white = id_player_white
         self.id_player_black = id_player_black
 
