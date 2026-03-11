@@ -11,7 +11,9 @@ from tqdm import tqdm
 import torch
 from src.ai.brain import load_params
 from src.ai.player_wrappers import find_threat_squares, heuristic_player, \
-    model_player
+    model_player, random_player
+import matplotlib.pyplot as plt
+import mlflow
 
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -82,16 +84,19 @@ class GeneticTrainer:
         model = Brain().to(DEVICE)
         load_params(model, genome)
 
-        score = 0.0
+        score = 0
+        losses = 0
+        draws = 0
         env = TicTacToe()
 
+        first = True
         for _ in range(self.games_per_eval):
             env.reset()
-            first = random.choice([True, False])
+            current_player = first
             mark = 1 if first else -1
 
             while True:
-                if first:
+                if current_player:
                     # First player
                     threats = find_threat_squares(env.board, -mark)
                     move = model_player(model, env.board, mark, DEVICE)
@@ -103,30 +108,42 @@ class GeneticTrainer:
                         break
                 else:
                     # Second player
-                    """
-                    if self.elite_models != []:
+                    """if self.elite_models != []:
                         elite = random.choice(self.elite_models)
-                        opp_move = model_player(elite, env.board, -mark, DEVICE)
-                    else:
-                    """
+                        opp_move = model_player(
+                            elite,
+                            env.board,
+                            -mark,
+                            DEVICE
+                            )
+                    else:"""
+                    # opp_move = random_player(env.board, -mark)
                     opp_move = heuristic_player(env.board, -mark)
                     env.board[opp_move] = -mark
                     result = check_winner(env.board)
                     if result is not None:
                         break
 
-                first = not first
+                current_player = not current_player
                 # Continuing loop
+
+            first = -first
 
             # Evaluating result from the perspective of the genome player
             if result == mark:
-                score += 1.0
+                score += 1
             elif result == 0:
+                draws += 1
                 score += 0.5
             else:
-                score -= 1.0
+                losses += 1
+                score -= 1
 
-        return score / self.games_per_eval
+            loss_rate = losses / self.games_per_eval
+            draw_rate = draws / self.games_per_eval
+            fitness = score / self.games_per_eval
+
+        return fitness, loss_rate, draw_rate
 
     def tournament(self, pop, fitness):
         indexes = np.random.choice(len(pop), self.tournament_k, replace=False)
@@ -157,27 +174,54 @@ class GeneticTrainer:
         return genome
 
     def run(self, generations=50):
+        mlflow.start_run()
+
+        mlflow.log_param("population_size", self.population_size)
+        mlflow.log_param("mutation_rate", self.mutation_rate)
+        mlflow.log_param("elite_fraction", self.elite_fraction)
+        mlflow.log_param("generations", generations)
+
         population = self.init_population()
 
+        fitness_history = []
+        loss_rate_history = []
+        draw_rate_history = []
+
         for gen in tqdm(range(1, generations + 1)):
-            fitness = [self.evaluate_genome(g) for g in population]
+            fitness_scores = []
+            generation_losses = []
+            generation_draws = []
+
+            for genome in population:
+                fitness, loss_rate, draw_rate = self.evaluate_genome(
+                    genome
+                    )
+                fitness_scores.append(fitness)
+                generation_losses.append(loss_rate)
+                generation_draws.append(draw_rate)
+
             # Record best
-            best_index = int(np.argmax(fitness))
-            print(f"Gen {gen} | Best fitness: {fitness[best_index]:.3f}")
+            best_fitness = max(fitness_scores)
+            print(f"Gen {gen} | Best fitness: {best_fitness}")
+
+            # Storing metrics for graph
+            fitness_history.append(best_fitness)
+            loss_rate_history.append(np.mean(generation_losses))
+            draw_rate_history.append(np.mean(generation_draws))
 
             # Create next generation
             new_pop = []
             # Elitism
             elite_n = max(1, int(self.elite_fraction * self.population_size))
-            elite_index = np.argsort(fitness)[-elite_n:]
+            elite_index = np.argsort(fitness_scores)[-elite_n:]
 
             for index in elite_index:
                 new_pop.append(population[index].clone())
 
             # Fill rest
             while len(new_pop) < self.population_size:
-                parent1 = self.tournament(population, fitness)
-                parent2 = self.tournament(population, fitness)
+                parent1 = self.tournament(population, fitness_scores)
+                parent2 = self.tournament(population, fitness_scores)
                 child1, child2 = self.crossover(parent1, parent2)
                 new_pop.append(self.mutate(child1))
                 if len(new_pop) < self.population_size:
@@ -185,10 +229,32 @@ class GeneticTrainer:
 
             population = new_pop
 
-            best_current_genome = population[int(np.argmax(fitness))]
+            # Saving elite model
+            best_current_genome = population[np.argmax(fitness_scores)]
             model = Brain().to(DEVICE)
             load_params(model, best_current_genome)
             self.elite_models.append(model)
 
-        best_genome = population[int(np.argmax(fitness))]
+            mlflow.log_metric("best_fitness", best_fitness, step=gen)
+            mlflow.log_metric("loss_rate", np.mean(generation_losses), step=gen)
+            mlflow.log_metric("draw_rate", np.mean(generation_draws), step=gen)
+
+        # Plot training curves
+        generations = range(len(fitness_history))
+
+        plt.figure(figsize=(10, 6))
+        plt.plot(generations, fitness_history, label="Best Fitness")
+        plt.plot(generations, loss_rate_history, label="Loss Rate")
+        plt.plot(generations, draw_rate_history, label="Draw Rate")
+        plt.xlabel("Generation")
+        plt.ylabel("Metric Value")
+        plt.title("Training Evolution")
+        plt.legend()
+        plt.savefig("training_evolution.png")
+        plt.show()
+
+        mlflow.log_artifact("training_evolution.png")
+        mlflow.end_run()
+
+        best_genome = population[np.argmax(fitness_scores)]
         return best_genome

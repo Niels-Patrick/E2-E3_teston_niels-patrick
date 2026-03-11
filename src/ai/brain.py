@@ -27,3 +27,28 @@ def load_params(model: nn.Module, genome: torch.Tensor) -> None:
         size = p.numel()
         p.data.copy_(genome[index:index + size].view_as(p))
         index += size
+
+
+"""class Brain(nn.Module):
+    def __init__(self):
+        super().__init__()
+
+        self.conv = nn.Sequential(
+            nn.Conv2d(1, 16, kernel_size=3, padding=1),
+            nn.Softmax(),
+
+            nn.Conv2d(16, 32, kernel_size=3, padding=1),
+            nn.Softmax()
+        )
+
+        self.fc = nn.Sequential(
+            nn.Flatten(),
+            nn.Linear(32 * 3 * 3, 64),
+            nn.Softmax(),
+            nn.Linear(64, 9)
+        )
+
+    def forward(self, x):
+        x = self.conv(x)
+        x = self.fc(x)
+        return x"""

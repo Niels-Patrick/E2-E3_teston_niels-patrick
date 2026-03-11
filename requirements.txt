@@ -13,3 +13,5 @@ marshmallow-sqlalchemy
 cryptography
 bcrypt
 psycopg2
+matplotlib
+mlflow

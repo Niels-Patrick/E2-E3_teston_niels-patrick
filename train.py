@@ -1,4 +1,5 @@
 import pickle
+import mlflow
 import torch
 from src.ai.brain import Brain, load_params
 from src.ai.genetic_algorithm import GeneticTrainer
@@ -10,7 +11,7 @@ print(f"Using device: {DEVICE}")
 
 def main():
     trainer = GeneticTrainer(
-        population_size=64,
+        population_size=100,
         games_per_eval=60,
         mutation_rate=0.05,
         mutation_std=0.15
@@ -23,6 +24,7 @@ def main():
     model = Brain().to(DEVICE)
     load_params(model, best_genome)
     torch.save(model.state_dict(), "best_ttt_model.pt")
+    mlflow.log_artifact("best_ttt_model.pt")
 
     with open("best_genome.pkl", "wb") as f:
         pickle.dump(best_genome.cpu(), f)
