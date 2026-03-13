@@ -5,7 +5,7 @@ This file contains the SQLAlchemy User model as well as its functions.
 """
 
 import uuid
-from sqlalchemy import Column, String
+from sqlalchemy import Column, ForeignKey, String
 from sqlalchemy.dialects.postgresql import UUID
 from dataclasses import dataclass
 from sqlalchemy.orm import relationship
@@ -24,35 +24,41 @@ class User(db.Model):
     username = Column(String(500), nullable=False)
     password = Column(String(500), nullable=False)
     email = Column(String(250), nullable=False)
+    id_role = Column(
+        UUID(as_uuid=True),
+        ForeignKey('roles.id_role', ondelete="CASCADE"),
+        nullable=False
+        )
 
     game_x = relationship(
         "Game",
         back_populates="user_x",
         foreign_keys="Game.id_user_x"
         )
+
     game_o = relationship(
         "Game",
         back_populates="user_o",
         foreign_keys="Game.id_user_o"
         )
 
-    def __init__(self, username: str, password: str, email: str):
+    role = relationship(
+        "Role",
+        back_populates="user",
+        foreign_keys=[id_role]
+        )
+
+    def __init__(
+            self,
+            username: str,
+            password: str,
+            email: str,
+            id_role: UUID
+            ):
         self.username = username
         self.password = password
         self.email = email
-
-    def to_json(self) -> dict:
-        """
-        Returns a user's data as JSON.
-        """
-        json_user = {
-            "id_player": self.id_player,
-            "username": self.username,
-            "email": self.email
-        }
-
-        logger_manager.info("User's information successfully fetched")
-        return json_user
+        self.id_role = id_role
 
 
 def get_users() -> list[User]:
@@ -91,7 +97,7 @@ def get_user_by_id(id: uuid) -> User:
     Fetches a specific user from the database based on their ID.
     """
     try:
-        user = User.query.filter_by(id=id).first()
+        user = User.query.filter_by(id_user=id).first()
 
         logger_manager.info("User successfully fetched from database")
         return user

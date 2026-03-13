@@ -38,6 +38,7 @@ class Game(db.Model):
         back_populates="game_x",
         foreign_keys=[id_user_x]
         )
+
     user_o = relationship(
         "User",
         back_populates="game_o",
@@ -49,14 +50,14 @@ class Game(db.Model):
         game_date: Date,
         game_result: str,
         moves: list[str],
-        id_player_white: uuid,
-        id_player_black: uuid
+        id_user_x: uuid,
+        id_user_o: uuid
     ):
         self.game_date = game_date
         self.game_result = game_result
         self.moves = moves
-        self.id_player_white = id_player_white
-        self.id_player_black = id_player_black
+        self.id_user_x = id_user_x
+        self.id_user_o = id_user_o
 
 
 def get_games() -> list[Game]:
@@ -67,7 +68,7 @@ def get_games() -> list[Game]:
         games (list[Game]): a list of all of the games.
     """
     try:
-        games = db.query(Game).all()
+        games = Game.query.all()
 
         return games
     except Exception as e:
@@ -75,12 +76,12 @@ def get_games() -> list[Game]:
         raise
 
 
-def get_game_by_id(id: uuid) -> Game:
+def get_game_by_id(id: uuid.UUID) -> Game:
     """
     Fetches a specific game from the database based on their id.
     """
     try:
-        game = Game.query.filter_by(id=id).first()
+        game = Game.query.filter_by(id_game=id).first()
 
         logger_manager.info("Game successfully fetched from database")
         return game

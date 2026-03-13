@@ -220,13 +220,9 @@ def edit_user() -> Response:
     access_token = get_jwt()
     current_user: User = get_user_by_id(uuid.UUID(access_token.get("sub")))
 
-    if not current_user:
-        logger_manager.error("Current user not found")
-        return jsonify(
-            message="Error: Current user not found"
-            ), 404
-
     try:
+        data['password'] = hash_password(data.get('password'))
+
         edited_user = UpdateUserSchema().load(  # noqa: F841
             data,
             instance=current_user,
@@ -292,10 +288,6 @@ def edit_password() -> Response:
     access_token = get_jwt()
     current_user: User = get_user_by_id(uuid.UUID(access_token.get("sub")))
 
-    if not current_user:
-        logger_manager.error("User not found")
-        return jsonify(message="Error: User not found"), 404
-
     if not verify_password(data.get("old_password"), current_user.password):
         logger_manager.error("The old password is incorrect")
         return jsonify(message="Error: The old password is incorrect"), 400
@@ -312,9 +304,9 @@ def edit_password() -> Response:
         raise
 
 
-@user_management.route('/', methods=["DELETE"])
+@user_management.route('/<string:username>', methods=["DELETE"])
 @jwt_required()
-def delete_user() -> Response:
+def delete_user(username: str) -> Response:
     """
     Deletes a specific user from the database.
     ---
@@ -327,7 +319,7 @@ def delete_user() -> Response:
           name: username
           type: string
           required: true
-          description: The username
+          description: The username of the user to delete.
     responses:
         200:
             description: Returns a success message.
@@ -337,7 +329,13 @@ def delete_user() -> Response:
     """
     # Gets the current user's data based on their ID stored in the token
     access_token = get_jwt()
-    current_user: User = get_user_by_id(uuid.UUID(access_token.get("sub")))
+    role = access_token.get('role')
+
+    if role.name != 'Admin':
+        current_user: User = get_user_by_id(access_token.get('sub'))
+
+    if role.name == 'Admin':
+        current_user: User = get_user_by_username(username)
 
     if not current_user:
         logger_manager.error("User not found")

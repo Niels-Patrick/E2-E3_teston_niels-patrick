@@ -11,6 +11,7 @@ from flask import Blueprint, Response, jsonify, request
 from flask_jwt_extended import create_access_token, create_refresh_token, \
     decode_token, jwt_required
 from src.models.refresh_tokens import RefreshToken, get_refresh_token_by_id
+from src.models.schemas.schemas_users import ReadUserSchema
 from src.models.users import get_user_by_username
 from src.utils.functions_routes import get_token_from_header, verify_password
 from src.app.logger_manager import logger_manager
@@ -72,11 +73,13 @@ def submit() -> Response:
         return jsonify(message="Error: Invalid credentials"), 401
 
     try:
-        user_dict = user.to_json()
+        user_dict = ReadUserSchema(
+            session=db.session
+            ).dump(user)
         user_dict["type"] = "access"
 
         access_token = create_access_token(
-            identity=str(user.id),
+            identity=str(user.id_user),
             expires_delta=timedelta(minutes=15),
             additional_claims=user_dict
             )
@@ -84,7 +87,7 @@ def submit() -> Response:
         refresh_identity = deepcopy(user_dict)
         refresh_identity["type"] = "refresh"
         refresh_token = create_refresh_token(
-            identity=str(user.id),
+            identity=str(user.id_user),
             expires_delta=timedelta(days=7),
             additional_claims=refresh_identity
             )
@@ -92,7 +95,7 @@ def submit() -> Response:
         # Storing the refresh token in the database.
         token = RefreshToken(refresh_token)
 
-        old_refresh_token = get_refresh_token_by_id(user.id)
+        old_refresh_token = get_refresh_token_by_id(user.id_user)
 
         if old_refresh_token is not None:
             db.session.delete(old_refresh_token)

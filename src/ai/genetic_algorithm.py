@@ -47,10 +47,6 @@ class GeneticTrainer:
                                 selection.
             games_per_eval (int): How many TicTacToe games an agent plays when
                                   being evaluated.
-            play_second_probability (int): Probability the agent plays second
-                                           (helps avoid bias).
-            opponent (str): Which opponent function to use when evaluating
-                            ('random' or 'heuristic').
             seed: Optional random seed for reproducibility.
         """
         random.seed(seed)
@@ -90,6 +86,7 @@ class GeneticTrainer:
         env = TicTacToe()
 
         first = True
+        first_trainings_count = 0
         for _ in range(self.games_per_eval):
             env.reset()
             current_player = first
@@ -108,7 +105,7 @@ class GeneticTrainer:
                         break
                 else:
                     # Second player
-                    """if self.elite_models != []:
+                    if self.elite_models != [] and first_trainings_count < 35:
                         elite = random.choice(self.elite_models)
                         opp_move = model_player(
                             elite,
@@ -116,9 +113,9 @@ class GeneticTrainer:
                             -mark,
                             DEVICE
                             )
-                    else:"""
-                    # opp_move = random_player(env.board, -mark)
-                    opp_move = heuristic_player(env.board, -mark)
+                    else:
+                        # opp_move = random_player(env.board, -mark)
+                        opp_move = heuristic_player(env.board, -mark)
                     env.board[opp_move] = -mark
                     result = check_winner(env.board)
                     if result is not None:
@@ -128,6 +125,7 @@ class GeneticTrainer:
                 # Continuing loop
 
             first = -first
+            first_trainings_count += 1
 
             # Evaluating result from the perspective of the genome player
             if result == mark:
@@ -146,6 +144,10 @@ class GeneticTrainer:
         return fitness, loss_rate, draw_rate
 
     def tournament(self, pop, fitness):
+        """
+        Mini-tournament between a specific number (tournament_k) of randomly
+        selected genomes, to determine which one is the best, then returns it.
+        """
         indexes = np.random.choice(len(pop), self.tournament_k, replace=False)
         best = max(indexes, key=lambda i: fitness[i])
 
@@ -174,8 +176,6 @@ class GeneticTrainer:
         return genome
 
     def run(self, generations=50):
-        mlflow.start_run()
-
         mlflow.log_param("population_size", self.population_size)
         mlflow.log_param("mutation_rate", self.mutation_rate)
         mlflow.log_param("elite_fraction", self.elite_fraction)
@@ -236,7 +236,11 @@ class GeneticTrainer:
             self.elite_models.append(model)
 
             mlflow.log_metric("best_fitness", best_fitness, step=gen)
-            mlflow.log_metric("loss_rate", np.mean(generation_losses), step=gen)
+            mlflow.log_metric(
+                "loss_rate",
+                np.mean(generation_losses),
+                step=gen
+                )
             mlflow.log_metric("draw_rate", np.mean(generation_draws), step=gen)
 
         # Plot training curves
