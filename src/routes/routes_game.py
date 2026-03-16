@@ -11,7 +11,7 @@ from cryptography.fernet import Fernet
 from dotenv import load_dotenv
 from flask import Blueprint, Response, jsonify, request
 from flask_jwt_extended import jwt_required
-from src.models.games import Game, get_game_by_id, get_games
+from src.models.games import Game, get_game_by_id, get_games, get_saved_game
 from src.app.logger_manager import logger_manager
 from src.models.schemas.schemas_games import CreateGameSchema, \
     ReadGameSchema, UpdateGameSchema
@@ -68,11 +68,11 @@ def get_all_games() -> Response:
         raise
 
 
-@game_management.route('/<uuid:id>', methods=['GET'])
+@game_management.route('/last-game', methods=['GET'])
 @jwt_required()
-def get_a_game(id: uuid) -> Response:
+def get_last_game() -> Response:
     """
-    Fetches a specific game's data from the database.
+    Loads the saved game's data from the database.
     ---
     tags:
         - Games
@@ -92,11 +92,14 @@ def get_a_game(id: uuid) -> Response:
             description: Returns an error message if the game is not found in
                          the database.
     """
-    game = get_game_by_id(id)
+    game = get_saved_game()
 
     if not game:
-        logger_manager.error("Game not found")
-        return jsonify(message="Error: Game not found"), 404
+        logger_manager.error("No saved game")
+        return jsonify({
+            "game": None,
+            "message": "Sucess: No saved game"
+            }), 200
 
     try:
         game_dump = ReadGameSchema(

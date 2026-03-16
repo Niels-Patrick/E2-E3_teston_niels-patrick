@@ -4,10 +4,10 @@ SQLAlchemy Game model file.
 This file contains the SQLAlchemy Game model as well as its functions.
 """
 
-from sqlalchemy import Column, ForeignKey, String, Date, Text
+from sqlalchemy import Column, ForeignKey, String, Date
 from sqlalchemy.orm import relationship
 import uuid
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from dataclasses import dataclass
 from src.app.db_manager import db
 from src.app.logger_manager import logger_manager
@@ -21,7 +21,7 @@ class Game(db.Model):
     id_game = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     game_date = Column(Date, nullable=True)
     game_result = Column(String(50), nullable=True)
-    moves = Column(Text, nullable=True)
+    moves = Column(JSONB, nullable=True)
     id_user_x = Column(
         UUID,
         ForeignKey("users.id_user"),
@@ -73,6 +73,22 @@ def get_games() -> list[Game]:
         return games
     except Exception as e:
         logger_manager.error(f"Error fetching Games in database: {str(e)}")
+        raise
+
+
+def get_saved_game() -> Game:
+    """
+    Gets the saved (unfinished) game's data.
+
+    Returns:
+        game (Game): the saved game.
+    """
+    try:
+        game = Game.query.filter_by(game_result=None).first()
+
+        return game
+    except Exception as e:
+        logger_manager.error(f"Error fetching Game in database: {str(e)}")
         raise
 
 

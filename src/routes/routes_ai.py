@@ -49,6 +49,12 @@ def play_ai_turn() -> Response:
     try:
         data = request.json
         board = np.array(data.get("board"))
+        board_numeric = np.where(
+            board == " ",
+            0,
+            np.where(board == "X", 1, np.where(board == "O", -1, 0))
+            )
+        logger_manager.warning(board_numeric)
 
         state_dict = torch.load(
             "./best_ttt_model.pt",
@@ -59,11 +65,20 @@ def play_ai_turn() -> Response:
         model = Brain().to(DEVICE)
         model.load_state_dict(state_dict)
 
-        ai_move = model_player(model, board.copy(), data.get("aiMark"), DEVICE)
+        ai_mark = -1
+        if data.get("aiMark") == "X":
+            ai_mark = 1
+        else:
+            ai_mark = -1
+
+        logger_manager.warning(board_numeric.copy())
+
+        ai_move = model_player(model, board_numeric.copy(), ai_mark, DEVICE)
+
         board[ai_move] = data.get("aiMark")
 
         return jsonify({
-            "board": board,
+            "board": board.tolist(),
             "message": "AI move successfully done."
             }), 200
     except Exception as e:

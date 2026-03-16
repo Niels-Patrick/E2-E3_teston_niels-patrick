@@ -24,7 +24,7 @@ class CreateGameSchema(CamelCaseSQLAlchemyAutoSchema):
 
     game_date = fields.Date(required=False, allow_none=True)
     game_result = fields.String(required=True)
-    moves = fields.String(required=True)
+    moves = fields.Dict()
     id_user_x = fields.UUID(required=False, allow_none=True)
     id_user_o = fields.UUID(required=False, allow_none=True)
 
@@ -44,7 +44,7 @@ class UpdateGameSchema(CamelCaseSQLAlchemyAutoSchema):
 
     game_date = fields.Date(required=False, allow_none=True)
     game_result = fields.String()
-    moves = fields.String()
+    moves = fields.Dict()
     id_user_x = fields.UUID(required=False, allow_none=True)
     id_user_o = fields.UUID(required=False, allow_none=True)
 
@@ -60,7 +60,7 @@ class ReadGameSchema(CamelCaseSQLAlchemyAutoSchema):
     id_game = fields.UUID()
     game_date = fields.Date()
     game_result = fields.String()
-    moves = fields.String()
+    moves = fields.Dict()
     id_user_x = fields.UUID()
     id_user_o = fields.UUID()
     user_x = fields.Nested(ReadUserSchema)

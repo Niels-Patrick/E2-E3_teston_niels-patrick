@@ -43,19 +43,15 @@ def refresh_tokens() -> Response:
         # Decodes the token, even if it has expired
         refresh_token = decode_token(token, allow_expired=True)
 
-        user = {
-            "username": refresh_token.get("username")
-        }
-
         token_type = refresh_token.get("type")
 
         if token_type != "refresh":
             logger_manager.error("Invalid token for refresh")
             return jsonify(message="Error: Invalid token for refresh"), 401
 
-        access_user = deepcopy(user)
+        access_user = deepcopy(refresh_token)
         access_user["type"] = "access"
-        refresh_user = deepcopy(user)
+        refresh_user = deepcopy(refresh_token)
         refresh_token["type"] = "refresh"
 
         # Refreshing access token
