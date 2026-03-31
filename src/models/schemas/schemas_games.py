@@ -23,7 +23,7 @@ class CreateGameSchema(CamelCaseSQLAlchemyAutoSchema):
             )
 
     game_date = fields.Date(required=False, allow_none=True)
-    game_result = fields.String(required=True)
+    game_result = fields.String(required=False, allow_none=True)
     moves = fields.Dict()
     id_user_x = fields.UUID(required=False, allow_none=True)
     id_user_o = fields.UUID(required=False, allow_none=True)
@@ -43,7 +43,7 @@ class UpdateGameSchema(CamelCaseSQLAlchemyAutoSchema):
             )
 
     game_date = fields.Date(required=False, allow_none=True)
-    game_result = fields.String()
+    game_result = fields.String(required=False, allow_none=True)
     moves = fields.Dict()
     id_user_x = fields.UUID(required=False, allow_none=True)
     id_user_o = fields.UUID(required=False, allow_none=True)

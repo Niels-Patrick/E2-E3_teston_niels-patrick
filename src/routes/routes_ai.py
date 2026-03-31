@@ -54,7 +54,6 @@ def play_ai_turn() -> Response:
             0,
             np.where(board == "X", 1, np.where(board == "O", -1, 0))
             )
-        logger_manager.warning(board_numeric)
 
         state_dict = torch.load(
             "./best_ttt_model.pt",
@@ -70,8 +69,6 @@ def play_ai_turn() -> Response:
             ai_mark = 1
         else:
             ai_mark = -1
-
-        logger_manager.warning(board_numeric.copy())
 
         ai_move = model_player(model, board_numeric.copy(), ai_mark, DEVICE)
 

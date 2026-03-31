@@ -15,4 +15,5 @@ bcrypt
 psycopg2
 matplotlib
 mlflow
+prometheus_client
 pytest

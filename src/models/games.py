@@ -48,10 +48,10 @@ class Game(db.Model):
     def __init__(
         self,
         game_date: Date,
-        game_result: str,
         moves: list[str],
-        id_user_x: uuid,
-        id_user_o: uuid
+        id_user_x: uuid = None,
+        id_user_o: uuid = None,
+        game_result: str = None
     ):
         self.game_date = game_date
         self.game_result = game_result

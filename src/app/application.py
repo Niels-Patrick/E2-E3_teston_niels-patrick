@@ -16,6 +16,7 @@ from src.routes.routes_user import user_management
 from src.routes.routes_ai import ai_management
 from src.routes.routes_game import game_management
 from src.routes.routes_role import role_management
+from src.routes.routes_monitoring import monitoring_management
 
 
 class Application:
@@ -107,6 +108,10 @@ class Application:
         flask_api.register_blueprint(user_management, url_prefix='/api/user')
         flask_api.register_blueprint(game_management, url_prefix='/api/game')
         flask_api.register_blueprint(role_management, url_prefix='/api/role')
+        flask_api.register_blueprint(
+            monitoring_management,
+            url_prefix='/api/monitoring'
+            )
 
         # Initializing the database
         init_db(flask_api, self.config.database_config.SQLALCHEMY_DATABASE_URI)
