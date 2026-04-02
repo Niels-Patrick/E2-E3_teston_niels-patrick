@@ -69,7 +69,7 @@ services:
       - prometheus
     volumes:
       - e2-e3-grafana-storage:/var/lib/grafana
-      - .monitoring/grafana/provisioning:/etc/grafana/provisioning
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
 
   uptime-kuma:
     image: louislam/uptime-kuma:latest

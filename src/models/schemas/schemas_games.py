@@ -19,7 +19,8 @@ class CreateGameSchema(CamelCaseSQLAlchemyAutoSchema):
         exclude = (
             "id_game",
             "user_x",
-            "user_o"
+            "user_o",
+            "created_at"
             )
 
     game_date = fields.Date(required=False, allow_none=True)
@@ -39,7 +40,8 @@ class UpdateGameSchema(CamelCaseSQLAlchemyAutoSchema):
         exclude = (
             "id_game",
             "user_x",
-            "user_o"
+            "user_o",
+            "created_at"
             )
 
     game_date = fields.Date(required=False, allow_none=True)
@@ -65,3 +67,4 @@ class ReadGameSchema(CamelCaseSQLAlchemyAutoSchema):
     id_user_o = fields.UUID()
     user_x = fields.Nested(ReadUserSchema)
     user_o = fields.Nested(ReadUserSchema)
+    created_at = fields.DateTime()

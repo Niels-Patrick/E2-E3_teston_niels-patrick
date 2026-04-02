@@ -16,6 +16,7 @@ from src.app.logger_manager import logger_manager
 from src.models.schemas.schemas_games import CreateGameSchema, \
     ReadGameSchema, UpdateGameSchema
 from src.app.db_manager import db
+from src.routes.routes_monitoring import update_last_game_metrics
 from src.utils.rbac_decorator import roles_required
 
 
@@ -165,6 +166,13 @@ def add_game() -> Response:
         db.session.add(new_game)
         db.session.commit()
 
+        try:
+            update_last_game_metrics()
+        except Exception as e:
+            logger_manager.error(
+                f"Failed to update metrics after adding a game: {str(e)}"
+                )
+
         logger_manager.info("Game successfully created")
         return jsonify(message="Success: Game successfully created"), 200
     except Exception as e:
@@ -235,6 +243,13 @@ def edit_game() -> Response:
             )
 
         db.session.commit()
+
+        try:
+            update_last_game_metrics()
+        except Exception as e:
+            logger_manager.error(
+                f"Failed to update metrics after editing a game: {str(e)}"
+                )
 
         logger_manager.info("Game successfully updated")
         return jsonify(

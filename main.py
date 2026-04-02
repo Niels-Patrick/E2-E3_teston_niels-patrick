@@ -6,15 +6,16 @@ the entry point to execute the function.
 
 This file initializes the required configurations and starts the application.
 
-The routes' documentation is available on: http://127.0.0.1:5001/apidocs/
+The routes' documentation is available on: http://127.0.0.1:5000/apidocs/
 """
 
 import os
 import sys
+import threading
 import eventlet
-
 from src.app.application import Application
 from src.app.config import AppConfig
+from prometheus_client import start_http_server
 
 
 eventlet.monkey_patch()
@@ -42,6 +43,9 @@ def create_app() -> Application:
 
 # Main entry point
 if __name__ == '__main__':
+    threading.Thread(
+        target=lambda: start_http_server(8000), daemon=True
+        ).start()
     app = create_app()
 
     app.socketio.run(

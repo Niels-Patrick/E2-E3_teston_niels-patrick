@@ -4,7 +4,7 @@ SQLAlchemy Game model file.
 This file contains the SQLAlchemy Game model as well as its functions.
 """
 
-from sqlalchemy import Column, ForeignKey, String, Date
+from sqlalchemy import Column, DateTime, ForeignKey, String, Date
 from sqlalchemy.orm import relationship
 import uuid
 from sqlalchemy.dialects.postgresql import JSONB, UUID
@@ -32,6 +32,11 @@ class Game(db.Model):
         ForeignKey("users.id_user"),
         nullable=True
         )
+    created_at = Column(
+        DateTime(timezone=True),
+        server_default=db.func.now(),
+        nullable=True
+        )
 
     user_x = relationship(
         "User",
@@ -49,6 +54,7 @@ class Game(db.Model):
         self,
         game_date: Date,
         moves: list[str],
+        created_at: DateTime = None,
         id_user_x: uuid = None,
         id_user_o: uuid = None,
         game_result: str = None
@@ -58,6 +64,7 @@ class Game(db.Model):
         self.moves = moves
         self.id_user_x = id_user_x
         self.id_user_o = id_user_o
+        self.created_at = created_at
 
 
 def get_games() -> list[Game]:
@@ -89,6 +96,26 @@ def get_saved_game() -> Game:
         return game
     except Exception as e:
         logger_manager.error(f"Error fetching Game in database: {str(e)}")
+        raise
+
+
+def get_last_games(limit: int = 10) -> list[Game]:
+    """
+    Gets the most recent completed games from the database.
+
+    Returns:
+        games (list[Game]): A list of recent games.
+    """
+    try:
+        games = Game.query.filter(Game.game_result.isnot(None))
+        games = games.order_by(Game.created_at.desc(), Game.id_game.desc())
+        games = games.limit(limit).all()
+
+        return games
+    except Exception as e:
+        logger_manager.error(
+            f"Error fetching last games in database: {str(e)}"
+            )
         raise
 
 

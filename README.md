@@ -112,6 +112,50 @@ Launch Prometheus and Grafana (see `monitoring/` subfolders) to visualize metric
 
 ---
 
+## 📈 Monitoring & Metrics
+
+This project includes real-time monitoring of AI performance using Prometheus and Grafana.
+
+### What is Monitored?
+- **AI win, loss, and draw rates** over the last 10 games (from the database, not just in-memory)
+- **Retrain signal**: If the AI's loss rate exceeds a threshold, a metric signals that retraining is recommended
+- **Game statistics**: Number of recent games with known outcomes
+
+### How it Works
+- The Flask API exposes a Prometheus-compatible metrics endpoint at:
+  - `GET /api/monitoring/metrics`
+- Prometheus scrapes this endpoint every 15 seconds (configurable)
+- Metrics are computed from the last 10 games saved in the database
+- Grafana dashboards visualize these metrics for live monitoring and alerting
+
+### Setup Steps
+1. **Start the Flask API** (see above)
+2. **Start Prometheus**
+   - Config file: `monitoring/prometheus/prometheus.yml`
+   - Ensure the `targets` entry matches your Flask API host/port (default: `localhost:5000`)
+3. **Start Grafana**
+   - Use the provided Dockerfile and provisioning in `monitoring/grafana/`
+   - Prebuilt dashboards and Prometheus datasource are auto-provisioned
+4. **Access Grafana**
+   - Default: [http://localhost:3000](http://localhost:3000)
+   - Login (default admin/admin), open the "AI Last 10 Games" dashboard
+
+### Key Metrics
+- `ttt_ai_last_10_win_rate` – Win rate of the AI in the last 10 games
+- `ttt_ai_last_10_loss_rate` – Loss rate of the AI in the last 10 games
+- `ttt_ai_last_10_draw_rate` – Draw rate of the AI in the last 10 games
+- `ttt_ai_last_10_known_games` – Number of recent games with a determinable outcome
+- `ttt_ai_last_10_should_retrain` – 1 if loss rate exceeds threshold, else 0
+
+### Troubleshooting
+- If metrics do not update, check:
+  - The Flask API logs for metric update info
+  - Prometheus targets page (`/targets`) for scrape errors
+  - Grafana dashboard time range (set to "Last 5 minutes" or similar)
+- If you see duplicate series, use `max(metric) by ()` in Grafana queries
+
+---
+
 ## 📂 Repository Structure
 ```
 benchmark.py          # benchmarking utilities
@@ -133,21 +177,3 @@ src/                  # Python package containing core logic
 monitoring/           # Prometheus/Grafana infrastructure
 requirements.txt      # Python dependencies
 README.md             # this document
-```
-
----
-
-## 🧪 Testing
-No automated tests are included at the moment. Consider adding unit tests for core modules (e.g. game logic, genetic algorithm, API).
-
-## 🔧 Development Tips
-- Use `src/app/logger_manager.logger_manager` for consistent logging.
-- The genetic algorithm prints progress; you can redirect output to a log file.
-- To reset the Flask logger (useful in tests) call `LoggerManager.reset_instance()`.
-
-## 📄 License
-Add your license information here.
-
----
-
-> _Happy hacking!_ 🎉
