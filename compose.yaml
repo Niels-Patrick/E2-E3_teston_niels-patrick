@@ -1,0 +1,93 @@
+services:
+  postgres:
+    image: postgres:18
+    container_name: e2-e3-postgres
+    environment:
+      POSTGRES_DB: tictactoe
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: Bn054Vb007@
+    ports:
+      - "5432:5432"
+    networks:
+      - tictactoe-network
+    volumes:
+      - e2-e3-postgres_data:/var/lib/postgresql
+
+  e2-e3-tictactoe:
+    build:
+      dockerfile: Dockerfile
+    container_name: e2-e3-tictactoe
+    ports:
+      - "5000:5000"
+    volumes:
+      - .:/app
+      - tictactoe-logs:/app/src/logs
+    networks:
+      - tictactoe-network
+    depends_on:
+      - postgres
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: Bn054Vb007@
+      DB_NAME: tictactoe
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: e2-e3-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus:/etc/prometheus
+    networks:
+      - tictactoe-network
+    depends_on:
+      - e2-e3-tictactoe
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --web.enable-lifecycle
+  
+  grafana:
+    build:
+      context: ./monitoring/grafana
+      dockerfile: Dockerfile
+    container_name: e2-e3-grafana
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      - GF_SMTP_ENABLED=${GRAFANA_SMTP_ENABLED}
+      - GF_SMTP_HOST=${GRAFANA_SMTP_HOST}
+      - GF_SMTP_USER=${GRAFANA_SMTP_USER}
+      - GF_SMTP_PASSWORD=${GRAFANA_SMTP_PASSWORD}
+      - GF_SMTP_FROM_ADDRESS=${GRAFANA_FROM_ADDRESS}
+    networks:
+      - tictactoe-network
+    depends_on:
+      - prometheus
+    volumes:
+      - e2-e3-grafana-storage:/var/lib/grafana
+      - .monitoring/grafana/provisioning:/etc/grafana/provisioning
+
+  uptime-kuma:
+    image: louislam/uptime-kuma:latest
+    container_name: e2-e3-uptime-kuma
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    networks:
+      - tictactoe-network
+    volumes:
+      - ./uptime-kuma-data:/app/data
+    depends_on:
+      - e2-e3-tictactoe
+
+networks:
+  tictactoe-network:
+
+volumes:
+  e2-e3-grafana-storage:
+  tictactoe-logs:
+  e2-e3-postgres_data:

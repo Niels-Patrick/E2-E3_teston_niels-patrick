@@ -12,8 +12,9 @@ marshmallow
 marshmallow-sqlalchemy
 cryptography
 bcrypt
-psycopg2
+psycopg2-binary
 matplotlib
 mlflow
 prometheus_client
 pytest
+torch

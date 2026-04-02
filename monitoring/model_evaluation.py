@@ -19,15 +19,17 @@ loss_rate = Gauge('ttt_loss_rate', 'Loss rate of the model')
 draw_rate = Gauge('ttt_draw_rate', 'Draw rate of the model')
 
 
-def evaluate(model: Brain) -> None:
+def evaluate(model: Brain) -> dict:
     results = play_games(model, 1000)
 
     win_rate.set(results["win_rate"])
     loss_rate.set(results["loss_rate"])
     draw_rate.set(results["draw_rate"])
 
+    return results
 
-def play_games(model: Brain, n: int = 1000) -> None:
+
+def play_games(model: Brain, n: int = 1000) -> dict:
     """
     Runs the Tic Tac Toe game.
 

@@ -38,11 +38,11 @@ def health() -> Response:
         db.session.commit()
         return {
             "status": "ok",
-            "timestamp": datetime.utcnow()
+            "timestamp": datetime.datetime.utcnow()
         }
     except Exception:
         Response.status_code = 503
         return {
             "status": "fail",
-            "timestamp": datetime.utcnow()
+            "timestamp": datetime.datetime.utcnow()
         }

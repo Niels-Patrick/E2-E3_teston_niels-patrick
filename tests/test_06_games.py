@@ -31,18 +31,23 @@ def client(app):
     return app.test_client()
 
 
-def test_get_game_by_id(client):
-    test_user = get_user_by_username("tuser")
+@pytest.fixture
+def test_user(app):
+    return get_user_by_username("tuser")
 
-    game = create_game(
-            db,
-            test_user.id_user
-        )
 
+@pytest.fixture
+def game(app, test_user):
+    return create_game(db, test_user.id_user)
+
+
+def test_get_game_by_id(game):
     assert get_game_by_id(game.id_game) == game  # noqa
 
 
-def test_get_all_games(client):
+def test_get_all_games(game):
     games = Game.query.all()
 
     assert get_games() == games
+
+    db.session.delete(game)
