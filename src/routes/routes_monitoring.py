@@ -7,14 +7,16 @@ This file contains all the routes required to monitor the API and the model.
 import datetime
 import threading
 from typing import Optional
-
-from flask import Blueprint, Response, jsonify
+from flask import Blueprint, Response, jsonify, request, send_from_directory
 from prometheus_client import CONTENT_TYPE_LATEST, Counter, Gauge, \
     generate_latest
 from src.app.db_manager import db
 from src.app.logger_manager import logger_manager
 from src.models.games import Game, get_last_games
+from src.utils.rbac_decorator import roles_required
 from train import main as run_training
+import glob
+import os
 
 # Defining a Blueprint for the monitoring page routes
 monitoring_management = Blueprint("monitoring_management", __name__)
@@ -47,6 +49,15 @@ AI_LAST_10_SHOULD_RETRAIN = Gauge(
     'ttt_ai_last_10_should_retrain',
     'Indicator whether the AI should retrain based on last 10 saved games',
 )
+
+
+# Global lock to prevent parallel trainings
+training_lock = threading.Lock()
+
+# Global variables to store the latest training result message and status
+training_result_message = "No training has been run yet."
+# Possible values: "idle", "running", "finished", "error"
+training_status = "idle"
 
 
 def update_last_game_metrics() -> None:
@@ -217,27 +228,113 @@ def last_game_results() -> Response:
         raise
 
 
-@monitoring_management.route("/retrain", methods=["POST"])
+@monitoring_management.route("/retrain-model", methods=["POST"])
+@roles_required(['Admin'])
 def retrain_model() -> Response:
     """
-    Starts the asynchronous model retraining.
+    Starts the asynchronous model retraining, but only if no other training is
+    running.
     ---
     tags:
         - Monitoring
+    security:
+        - Bearer: []
+    consumes:
+        - application/json
+    parameters:
+        - in: body
+          name: payload
+          required: true
+          schema:
+            type: object
+            properties:
+                population_size:
+                    type: integer
+                games_per_eval:
+                    type: integer
+                mutation_rate:
+                    type: float
+                mutation_std:
+                    type: float
+                generations:
+                    type: integer
     responses:
         202:
-            description: A JSON dictionnary containing a success message and
-                         the loss rate threshold.
+            description: A JSON dictionnary containing a success message.
+        409:
+            description: Training already in progress.
     """
-    try:
-        threading.Thread(target=run_training, daemon=True).start()
+    global training_result_message, training_status
+    data = request.json
+
+    if not data:
+        logger_manager.error("No data provided")
+        return jsonify(
+            message="Error: No data provided"
+            ), 400
+
+    if not training_lock.acquire(blocking=False):
+        logger_manager.error("Only one training can run at a time")
         return jsonify({
-            "message": "Retraining started in the background.",
-            "threshold": LOSS_RATE_THRESHOLD
-            }), 202
+            "message": "Error: Only one training can run at a time"
+        }), 409
+
+    def training_wrapper():
+        global training_result_message, training_status
+        try:
+            training_status = "running"
+            result = run_training(
+                population_size=data.get("populationSize"),
+                games_per_eval=data.get("gamesPerEval"),
+                mutation_rate=data.get("mutationRate"),
+                mutation_std=data.get("mutationStd"),
+                generations=data.get("generations"),
+            )
+            training_result_message = result or "Training finished, but no message returned." # noqa
+            training_status = "finished"
+        except Exception as e:
+            training_result_message = f"Training failed: {e}"
+            training_status = "error"
+        finally:
+            training_lock.release()
+    try:
+        threading.Thread(target=training_wrapper, daemon=True).start()
+        training_result_message = "Retraining running in the background"
+        training_status = "running"
+        logger_manager.info("Retraining started in the background")
+        return jsonify(message="Retraining started in the background"), 202
     except Exception as e:
+        training_lock.release()
         logger_manager.error(f"Error while starting retraining: {str(e)}")
         raise
+
+
+@monitoring_management.route("/training-result", methods=["GET"])
+def get_training_result() -> Response:
+    """
+    Returns the latest training result message and URLs to the latest plots.
+    """
+    import os
+    # List all PNG files in training_report
+    report_dir = os.path.join(os.getcwd(), "training_report")
+    plot_files = []
+    if os.path.exists(report_dir):
+        for f in glob.glob(os.path.join(report_dir, "*.png")):
+            plot_files.append(
+                f"/api/monitoring/training-report/{os.path.basename(f)}"
+                )
+    return jsonify({
+        "message": training_result_message,
+        "plots": plot_files
+    })
+
+
+@monitoring_management.route("/training-status", methods=["GET"])
+def get_training_status() -> Response:
+    """
+    Returns the current training status (idle, running, finished, error).
+    """
+    return jsonify({"status": training_status})
 
 
 @monitoring_management.before_request
@@ -277,3 +374,12 @@ def health() -> Response:
             "status": "fail",
             "timestamp": datetime.datetime.utcnow()
         }
+
+
+@monitoring_management.route("/training-report/<filename>")
+def get_training_report_file(filename):
+    """
+    Serve a file from the training_report directory.
+    """
+    report_dir = os.path.join(os.getcwd(), "training_report")
+    return send_from_directory(report_dir, filename)

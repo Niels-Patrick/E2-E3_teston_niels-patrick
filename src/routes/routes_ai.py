@@ -48,6 +48,11 @@ def play_ai_turn() -> Response:
     """
     try:
         data = request.json
+
+        if data.get("board") == []:
+            logger_manager.info("No board provided")
+            return jsonify(message="No board provided."), 400
+
         board = np.array(data.get("board"))
         board_numeric = np.where(
             board == " ",
@@ -74,6 +79,7 @@ def play_ai_turn() -> Response:
 
         board[ai_move] = data.get("aiMark")
 
+        logger_manager.info("AI move successfully done")
         return jsonify({
             "board": board.tolist(),
             "message": "AI move successfully done."

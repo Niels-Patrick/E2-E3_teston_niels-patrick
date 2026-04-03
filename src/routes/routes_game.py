@@ -60,9 +60,10 @@ def get_all_games() -> Response:
                 many=True
             ).dump(games)
 
+        logger_manager.info("Games list successfully fetched from database")
         return jsonify({
             "games": games_dump,
-            "message": "Games list successfully fetched from database."
+            "message": "Games list successfully fetched from database"
             }), 200
     except Exception as e:
         logger_manager.error(f"Error while fetching games: {str(e)}")

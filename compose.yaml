@@ -2,10 +2,12 @@ services:
   postgres:
     image: postgres:18
     container_name: e2-e3-postgres
+    env_file:
+      - .env
     environment:
-      POSTGRES_DB: tictactoe
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: Bn054Vb007@
+      POSTGRES_DB=${DB_NAME}
+      POSTGRES_USER=${DB_USERNAME}
+      POSTGRES_PASSWORD=${DB_PASSWORD}
     ports:
       - "5432:5432"
     networks:
@@ -26,12 +28,14 @@ services:
       - tictactoe-network
     depends_on:
       - postgres
+    env_file:
+      - .env
     environment:
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_USER: postgres
-      DB_PASSWORD: Bn054Vb007@
-      DB_NAME: tictactoe
+      DB_HOST=${DB_HOST}
+      DB_PORT=${DB_PORT}
+      DB_USER=${DB_USERNAME}
+      DB_PASSWORD=${DB_PASSWORD}
+      DB_NAME=${DB_NAME}
 
   prometheus:
     image: prom/prometheus:latest

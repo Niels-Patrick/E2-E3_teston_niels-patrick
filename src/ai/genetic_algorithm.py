@@ -14,6 +14,7 @@ from src.ai.player_wrappers import find_threat_squares, heuristic_player, \
     model_player, random_player
 import matplotlib.pyplot as plt
 import mlflow
+import os
 
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -255,6 +256,7 @@ class GeneticTrainer:
         plt.title("Training Evolution")
         plt.legend()
         plt.savefig("training_evolution.png")
+        plt.savefig(os.path.join("training_report", "training_evolution.png"))
         plt.show()
 
         mlflow.log_artifact("training_evolution.png")
