@@ -48,13 +48,13 @@ def test_play_ai_turn(client, monkeypatch):
     response = client.post(
             "/api/ai/",
             json={
-                "board": env.board,
+                "board": env.board.tolist(),
                 "aiMark": 1
                 },
             headers={"Authorization": f"Bearer {data['access_token']}"}
         )
     assert response.status_code == 200
-    assert response.get("board") != env.board
+    assert response.get_json()["board"] != env.board.tolist()
 
     monkeypatch.setattr("src.models.roles.Role.query", FakeQuery())
     payload = {

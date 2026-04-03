@@ -35,7 +35,7 @@ def play_games(model: Brain, n: int = 10) -> dict:
         "draws": 0
     }
 
-    for _ in n:
+    for _ in range(0, n):
         board = np.zeros(9, dtype=int)
 
         while True:

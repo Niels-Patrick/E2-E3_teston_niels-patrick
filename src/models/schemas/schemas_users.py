@@ -59,6 +59,4 @@ class ReadUserSchema(CamelCaseSQLAlchemyAutoSchema):
     password = fields.String()
     email = fields.String()
     id_role = fields.UUID()
-    game_x = fields.Nested('ReadGameSchema')
-    game_o = fields.Nested('ReadGameSchema')
     role = fields.Nested(ReadRoleSchema)

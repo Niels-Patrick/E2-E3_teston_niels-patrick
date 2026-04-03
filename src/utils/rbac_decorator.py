@@ -20,7 +20,7 @@ def roles_required(allowed_roles: list):
         def decorator(*args, **kwargs) -> Response | Any:
             verify_jwt_in_request()  # Verifies the validity of the token
             identity = get_jwt()  # Gets user's data from the token
-            user_role = identity.get('role')
+            user_role = identity.get('role')['name']
 
             if user_role not in allowed_roles:
                 return jsonify({"message": "Unauthorized access"}), 403

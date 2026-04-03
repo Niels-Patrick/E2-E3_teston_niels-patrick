@@ -331,10 +331,10 @@ def delete_user(username: str) -> Response:
     access_token = get_jwt()
     role = access_token.get('role')
 
-    if role.name != 'Admin':
+    if role['name'] != 'Admin':
         current_user: User = get_user_by_id(access_token.get('sub'))
 
-    if role.name == 'Admin':
+    if role['name'] == 'Admin':
         current_user: User = get_user_by_username(username)
 
     if not current_user:

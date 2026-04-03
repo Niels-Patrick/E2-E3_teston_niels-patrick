@@ -17,6 +17,7 @@ from src.utils.rbac_decorator import roles_required
 from train import main as run_training
 import glob
 import os
+from sqlalchemy import text
 
 # Defining a Blueprint for the monitoring page routes
 monitoring_management = Blueprint("monitoring_management", __name__)
@@ -362,17 +363,19 @@ def health() -> Response:
                          and a timestamp of the moment the status was checked.
     """
     try:
-        db.session.execute("SELECT 1")
+        db.session.execute(text("SELECT 1"))
         db.session.commit()
         return {
             "status": "ok",
             "timestamp": datetime.datetime.utcnow()
         }
-    except Exception:
+    except Exception as e:
+        logger_manager.error(f"Health check failed: {e}")
         Response.status_code = 503
         return {
             "status": "fail",
-            "timestamp": datetime.datetime.utcnow()
+            "timestamp": datetime.datetime.utcnow(),
+            "error": str(e)
         }
 
 

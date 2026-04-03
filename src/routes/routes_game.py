@@ -286,7 +286,6 @@ def delete_games() -> Response:
             description: Returns an error message if the game is not found in
                          the database.
     """
-    # Gets the current game's data based on its ID
     all_games = get_all_games()
 
     if not all_games:

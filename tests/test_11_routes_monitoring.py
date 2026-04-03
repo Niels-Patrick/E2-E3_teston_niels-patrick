@@ -35,10 +35,10 @@ def client(app):
 
 
 def test_metrics(client):
-    r = client.get("http://localhost:5000/metrics")
+    r = client.get("http://localhost:5000/api/monitoring/metrics")
 
     assert r.status_code == 200
-    assert "ttt_win_rate" in r.text
+    assert "ttt_ai_last_10_win_rate" in r.text
 
 
 def test_get_last_game_results(client):
@@ -66,7 +66,7 @@ def test_retrain_model_statuses(client, monkeypatch):
     }
 
     # 1. 400 Bad Request (no data)
-    r = client.post("/api/monitoring/retrain-model", headers=headers)
+    r = client.post("/api/monitoring/retrain-model", headers=headers, json={})
     assert r.status_code == 400
 
     # 2. 202 Accepted (valid request)
@@ -103,21 +103,24 @@ def test_retrain_model_statuses(client, monkeypatch):
 def test_health(client):
     r = client.get("/api/monitoring/")
 
-    assert r["status"] == "ok"
+    assert r.get_json()["status"] == "ok"
 
 
-def test_simulate_high_loss_rate(client):
+def test_simulate_high_loss_rate(client, monkeypatch):
     """
-    Simulate a high AI loss rate for Prometheus scraping.
-    Sets the ttt_ai_last_10_loss_rate metric to 1.0, fetches /metrics, and
-    checks the value.
+    Simulate a high AI loss rate for Prometheus scraping by mocking
+    update_last_game_metrics.
     """
-    from src.routes.routes_monitoring import AI_LAST_10_LOSS_RATE
-    # Set the metric to 1.0 (simulate 100% loss rate)
-    AI_LAST_10_LOSS_RATE.set(1.0)
+    def fake_update_last_game_metrics():
+        routes_monitoring.AI_LAST_10_LOSS_RATE.set(1.0)
+        routes_monitoring.AI_LAST_10_SHOULD_RETRAIN.set(1)
 
-    # Fetch the metrics endpoint
-    r = client.get("/api/metrics")
+    monkeypatch.setattr(
+        routes_monitoring,
+        "update_last_game_metrics",
+        fake_update_last_game_metrics
+        )
+
+    r = client.get("http://localhost:5000/api/monitoring/metrics")
     assert r.status_code == 200
-    # Check that the loss rate has been detected as superior or equal to 0.75
     assert b'ttt_ai_last_10_should_retrain 1.0' in r.data
