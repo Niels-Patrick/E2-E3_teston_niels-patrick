@@ -63,6 +63,6 @@ if __name__ == '__main__':
     app.socketio.run(
         app.flask,
         host=app.config.network_config.APP_HOST,
-        port=app.config.network_config.APP_PORT,
+        port=int(app.config.network_config.APP_PORT),
         debug=True
         )
