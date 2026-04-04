@@ -1,0 +1,54 @@
+apiVersion: 1
+groups:
+    - orgId: 1
+      name: ttt_loss_rate-group
+      folder: TicTacToe
+      interval: 15m
+      rules:
+        - uid: bfhwkbmmpdc74d
+          title: ttt_should_retrain_alert
+          condition: C
+          data:
+            - refId: A
+              relativeTimeRange:
+                from: 900
+                to: 0
+              datasourceUid: dfhva6rnopvk0b
+              model:
+                editorMode: code
+                expr: ttt_ai_last_10_should_retrain
+                instant: true
+                intervalMs: 1000
+                legendFormat: __auto
+                maxDataPoints: 43200
+                range: false
+                refId: A
+            - refId: C
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 1
+                        type: eq
+                      operator:
+                        type: and
+                      query:
+                        params: []
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: A
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: C
+                type: threshold
+          noDataState: NoData
+          execErrState: Error
+          isPaused: false
+          notification_settings:
+            receiver: TESTON Niels-Patrick
