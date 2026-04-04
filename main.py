@@ -12,26 +12,40 @@ The routes' documentation is available on: http://127.0.0.1:5000/apidocs/
 import os
 import sys
 import threading
-import eventlet
-from src.app.application import Application
-from src.app.config import AppConfig
 from prometheus_client import start_http_server
 
-
-eventlet.monkey_patch()
+# Matplotlib is imported indirectly by AI modules; in the container the default
+# home directory is not writable for the non-root user.
+os.environ.setdefault("MPLCONFIGDIR", "/tmp/matplotlib")
 
 # Adds the project root to the Python path
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, PROJECT_ROOT)
 
+_METRICS_SERVER_STATE = {"started": False}
 
-def create_app() -> Application:
+
+def start_metrics_server() -> None:
+    """Starts Prometheus metrics server once per process."""
+    if _METRICS_SERVER_STATE["started"]:
+        return
+
+    threading.Thread(
+        target=lambda: start_http_server(8000), daemon=True
+    ).start()
+    _METRICS_SERVER_STATE["started"] = True
+
+
+def create_app():
     """
     Factory function to create the application.
 
     Returns:
         application (Application): Application instance.
     """
+    from src.app.application import Application
+    from src.app.config import AppConfig
+
     try:
         application = Application(AppConfig())
     except Exception as e:
@@ -43,9 +57,7 @@ def create_app() -> Application:
 
 # Main entry point
 if __name__ == '__main__':
-    threading.Thread(
-        target=lambda: start_http_server(8000), daemon=True
-        ).start()
+    start_metrics_server()
     app = create_app()
 
     app.socketio.run(

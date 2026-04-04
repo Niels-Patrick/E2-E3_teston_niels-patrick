@@ -1,0 +1,10 @@
+apiVersion: 1
+contactPoints:
+  - orgId: 1
+    name: TESTON Niels-Patrick
+    receivers:
+      - uid: teston-niels-patrick-email
+        type: email
+        settings:
+          addresses: niels.teston@gmail.com
+        disableResolveMessage: false

@@ -5,9 +5,9 @@ services:
     env_file:
       - .env
     environment:
-      POSTGRES_DB=${DB_NAME}
-      POSTGRES_USER=${DB_USERNAME}
-      POSTGRES_PASSWORD=${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     ports:
       - "5432:5432"
     networks:
@@ -31,11 +31,11 @@ services:
     env_file:
       - .env
     environment:
-      DB_HOST=${DB_HOST}
-      DB_PORT=${DB_PORT}
-      DB_USER=${DB_USERNAME}
-      DB_PASSWORD=${DB_PASSWORD}
-      DB_NAME=${DB_NAME}
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_USER: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
 
   prometheus:
     image: prom/prometheus:latest
@@ -73,7 +73,10 @@ services:
       - prometheus
     volumes:
       - e2-e3-grafana-storage:/var/lib/grafana
-      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+      - ./monitoring/grafana/provisioning/dashboards.yml:/etc/grafana/provisioning/dashboards/dashboards.yml
+      - ./monitoring/grafana/provisioning/datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml
+      - ./monitoring/grafana/provisioning/alerting/alert-rules-1775313793429.yaml:/etc/grafana/provisioning/alerting/alert-rules-1775313793429.yaml
+      - ./monitoring/grafana/provisioning/contact-points.yml:/etc/grafana/provisioning/alerting/contact-points.yml
 
   uptime-kuma:
     image: louislam/uptime-kuma:latest

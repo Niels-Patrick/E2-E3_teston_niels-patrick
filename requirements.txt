@@ -2,12 +2,14 @@ numpy
 flask
 flask-jwt-extended
 flask-socketio
+gunicorn
 sqlalchemy
 flask-sqlalchemy
 flasgger
 dotenv
+gevent
+gevent-websocket
 loguru
-eventlet
 marshmallow
 marshmallow-sqlalchemy
 cryptography
@@ -18,3 +20,4 @@ mlflow
 prometheus_client
 pytest
 torch
+tqdm

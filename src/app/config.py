@@ -6,6 +6,7 @@ configuration options of the application : Flask, database and logs.
 """
 
 import os
+from urllib.parse import quote
 from dotenv import load_dotenv
 from dataclasses import dataclass, field
 
@@ -24,7 +25,7 @@ class DatabaseConfig:
 
     SQLALCHEMY_DATABASE_URI = (
             "postgresql://"
-            f"{DB_USERNAME}:{DB_PASSWORD}@"
+            f"{DB_USERNAME}:{quote(DB_PASSWORD, safe='')}@"
             f"{DB_HOST}:{DB_PORT}/{DB_NAME}"
         )
     print(f"Connection string: {SQLALCHEMY_DATABASE_URI}")

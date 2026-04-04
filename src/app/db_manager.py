@@ -25,6 +25,10 @@ def init_db(app: Flask, database_uri: str) -> None:
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
     try:
+        if app.extensions.get("sqlalchemy") is not None:
+            logger_manager.info("Database already initialized for this app")
+            return
+
         db.init_app(app)
 
         with app.app_context():

@@ -79,7 +79,7 @@
       "targets": [
         {
           "editorMode": "code",
-          "expr": "ttt_ai_last_10_should_retrain{instance=\"localhost:5000\"}",
+          "expr": "max(ttt_ai_last_10_should_retrain) by ()",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
@@ -145,7 +145,7 @@
             "uid": "dfhva6rnopvk0b"
           },
           "editorMode": "code",
-          "expr": "ttt_ai_last_10_win_rate{instance=\"localhost:5000\"}",
+          "expr": "max(ttt_ai_last_10_win_rate) by ()",
           "legendFormat": "Win Rate",
           "range": true,
           "refId": "A"
@@ -156,7 +156,7 @@
             "uid": "dfhva6rnopvk0b"
           },
           "editorMode": "code",
-          "expr": "ttt_ai_last_10_draw_rate{instance=\"localhost:5000\"}",
+          "expr": "max(ttt_ai_last_10_draw_rate) by ()",
           "instant": false,
           "legendFormat": "Draw Rate",
           "range": true,
@@ -168,7 +168,7 @@
             "uid": "dfhva6rnopvk0b"
           },
           "editorMode": "code",
-          "expr": "ttt_ai_last_10_loss_rate{instance=\"localhost:5000\"}",
+          "expr": "max(ttt_ai_last_10_loss_rate) by ()",
           "instant": false,
           "legendFormat": "Loss Rate",
           "range": true,

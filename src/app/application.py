@@ -34,9 +34,10 @@ class Application:
         self.logger_manager: LoggerManager = LoggerManager(LoggerConfig())
         self.jwt: JWTManager = JWTManager(self.flask)
         self.socketio: SocketIO = SocketIO(
-                self.flask,
-                cors_allowed_origins="*"
-            )
+            self.flask,
+            async_mode="gevent",
+            cors_allowed_origins="*"
+        )
         self.swagger: Swagger = Swagger(self.flask, template={
                 "info": {
                     "title": "TicTacToe Model Flask API",
@@ -65,7 +66,7 @@ class Application:
             return jsonify(message=f"Access token is invalid: {err}"), 422
 
         @self.jwt.expired_token_loader
-        def custom_expired_token(jwt_header, jwt_payload):
+        def custom_expired_token(_jwt_header, _jwt_payload):
             print("Access token expired.")
             return jsonify({
                     "message": "Access token expired.",
@@ -73,7 +74,7 @@ class Application:
                 }), 401
 
         @self.jwt.revoked_token_loader
-        def custom_revoked_token(jwt_header, jwt_payload):
+        def custom_revoked_token(_jwt_header, _jwt_payload):
             print("Access token revoked.")
             return jsonify({
                     "message": "Access token revoked.",
