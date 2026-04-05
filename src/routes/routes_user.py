@@ -56,7 +56,8 @@ def get_all_users() -> Response:
             return jsonify(message="No users found in database."), 404
 
         users_dump = ReadUserSchema(
-            session=db.session
+            session=db.session,
+            many=True
             ).dump(users)
 
         return jsonify({

@@ -8,14 +8,14 @@ the database and to manage CRUD operations.
 from flask import Blueprint, Response, jsonify
 from src.models.roles import get_all_roles
 from src.app.logger_manager import logger_manager
-from src.utils.rbac_decorator import roles_required
+from src.models.schemas.schemas_roles import ReadRoleSchema
+from src.app.db_manager import db
 
 # Defining a Blueprint for the role page routes
 role_management = Blueprint("role_management", __name__)
 
 
 @role_management.route('/', methods=['GET'])
-@roles_required(['Admin'])
 def get_roles() -> Response:
     """
     Gets all the roles' data from the database.
@@ -38,11 +38,14 @@ def get_roles() -> Response:
         return jsonify(message="Error: no roles found."), 404
 
     try:
-        roles_json = [role.to_json() for role in roles]
+        roles_dump = ReadRoleSchema(
+            session=db.session,
+            many=True
+            ).dump(roles)
 
         logger_manager.info("Roles successfully fetched")
         return jsonify({
-            "roles": roles_json,
+            "roles": roles_dump,
             "message": "Success: Roles successfully fetched"
             }), 200
     except Exception as e:

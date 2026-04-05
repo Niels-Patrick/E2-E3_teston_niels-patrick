@@ -276,9 +276,9 @@ def retrain_model() -> Response:
 
     if not training_lock.acquire(blocking=False):
         logger_manager.error("Only one training can run at a time")
-        return jsonify({
-            "message": "Error: Only one training can run at a time"
-        }), 409
+        return jsonify(
+            message="Error: Only one training can run at a time"
+            ), 409
 
     def training_wrapper():
         global training_result_message, training_status
