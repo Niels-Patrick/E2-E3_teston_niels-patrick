@@ -255,11 +255,7 @@ class GeneticTrainer:
         plt.ylabel("Metric Value")
         plt.title("Training Evolution")
         plt.legend()
-        plt.savefig("training_evolution.png")
-        plt.savefig(os.path.join("training_report", "training_evolution.png"))
-        plt.show()
-
-        mlflow.log_artifact("training_evolution.png")
+        plt.savefig(os.path.join("training_report", "z_training_evolution.png"))
         mlflow.end_run()
 
         best_genome = population[np.argmax(fitness_scores)]

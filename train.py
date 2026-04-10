@@ -58,7 +58,7 @@ def main(
                     )
                 return "Training finished. New model is good."
         except Exception as e:
-            logger_manager.error("Training crashed:", e)
+            logger_manager.error(f"Training crashed: {str(e)}")
             raise
 
 
@@ -66,7 +66,6 @@ def plot_evaluation_gauges(results: dict, output_dir: str = "training_report"):
     """
     Generate and save gauge plots for win, draw, and loss rates.
     """
-    os.makedirs(output_dir, exist_ok=True)
     rates = {
         "Win Rate": results["wins"] / 10,
         "Draw Rate": results["draws"] / 10,

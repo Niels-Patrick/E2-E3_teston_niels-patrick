@@ -8,6 +8,7 @@ import datetime
 import threading
 from typing import Optional
 from flask import Blueprint, Response, jsonify, request, send_from_directory
+import mlflow
 from prometheus_client import CONTENT_TYPE_LATEST, Counter, Gauge, \
     generate_latest
 from src.app.db_manager import db
@@ -283,21 +284,34 @@ def retrain_model() -> Response:
     def training_wrapper():
         global training_result_message, training_status
         try:
+            abs_output_dir = os.path.join(
+                os.path.dirname(os.path.abspath(__file__)),
+                "..",
+                "..",
+                "training_report"
+                )
+            abs_output_dir = os.path.abspath(abs_output_dir)
+            os.makedirs(abs_output_dir, exist_ok=True)
+            logger_manager.warning("New folder created")
+            logger_manager.warning("Training started")
             training_status = "running"
             result = run_training(
-                population_size=data.get("populationSize"),
-                games_per_eval=data.get("gamesPerEval"),
-                mutation_rate=data.get("mutationRate"),
-                mutation_std=data.get("mutationStd"),
-                generations=data.get("generations"),
+                population_size=int(data.get("populationSize")),
+                games_per_eval=int(data.get("gamesPerEval")),
+                mutation_rate=float(data.get("mutationRate")),
+                mutation_std=float(data.get("mutationStd")),
+                generations=int(data.get("generations")),
             )
+            logger_manager.warning("Training finished")
             training_result_message = result or "Training finished, but no message returned." # noqa
             training_status = "finished"
         except Exception as e:
-            training_result_message = f"Training failed: {e}"
+            logger_manager.error(f"Thread error: {str(e)}")
+            training_result_message = f"Training failed: {str(e)}"
             training_status = "error"
         finally:
             training_lock.release()
+            mlflow.end_run()
     try:
         threading.Thread(target=training_wrapper, daemon=True).start()
         training_result_message = "Retraining running in the background"
