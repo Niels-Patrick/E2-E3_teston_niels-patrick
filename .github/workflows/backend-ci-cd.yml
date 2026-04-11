@@ -41,24 +41,28 @@ jobs:
     name: Pytest
     runs-on: ubuntu-latest
 
-    services:
-      postgres:
-        image: postgres:18
-        env:
-          POSTGRES_DB: tictactoe_test
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U postgres -d tictactoe_test"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+
+      - name: Start PostgreSQL
+        run: |
+          docker run -d \
+            --name postgres \
+            -e POSTGRES_DB=${{ secrets.CI_DB_NAME }} \
+            -e POSTGRES_USER=${{ secrets.CI_DB_USERNAME }} \
+            -e POSTGRES_PASSWORD=${{ secrets.CI_DB_PASSWORD }} \
+            -p 5432:5432 \
+            postgres:18
+
+      - name: Wait for PostgreSQL to be ready
+        run: |
+          for i in $(seq 1 30); do
+            docker exec postgres pg_isready \
+              -U ${{ secrets.CI_DB_USERNAME }} \
+              -d ${{ secrets.CI_DB_NAME }} && break
+            sleep 2
+          done
 
       - name: Set up Python
         uses: actions/setup-python@v5
