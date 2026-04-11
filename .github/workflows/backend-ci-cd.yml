@@ -19,21 +19,21 @@ concurrency:
 
 env:
   IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/e2-e3-tictactoe-api
-  DB_USERNAME: postgres
-  DB_PASSWORD: postgres
-  DB_NAME: tictactoe_test
-  DB_HOST: 127.0.0.1
-  DB_PORT: 5432
-  JWT_TOKEN_LOCATION: headers
-  JWT_HEADER_NAME: Authorization
-  JWT_HEADER_TYPE: Bearer
-  JWT_SECRET_KEY: test-secret-key
-  FERN_KEY: 6nNQ8nL4g5pUQNoT5M1dM2J4RERhTzNnZ2hGc0o1aVk=
-  HOST: 127.0.0.1
-  PORT: 5000
-  ADMIN_USERNAME: admin
-  ADMIN_EMAIL: admin@example.com
-  ADMIN_PASSWORD: admin1234
+  DB_USERNAME: ${{ secrets.CI_DB_USERNAME || 'postgres' }}
+  DB_PASSWORD: ${{ secrets.CI_DB_PASSWORD || 'postgres' }}
+  DB_NAME: ${{ secrets.CI_DB_NAME || 'tictactoe_test' }}
+  DB_HOST: ${{ secrets.CI_DB_HOST || '127.0.0.1' }}
+  DB_PORT: ${{ secrets.CI_DB_PORT || '5432' }}
+  JWT_TOKEN_LOCATION: ${{ secrets.CI_JWT_TOKEN_LOCATION || 'headers' }}
+  JWT_HEADER_NAME: ${{ secrets.CI_JWT_HEADER_NAME || 'Authorization' }}
+  JWT_HEADER_TYPE: ${{ secrets.CI_JWT_HEADER_TYPE || 'Bearer' }}
+  JWT_SECRET_KEY: ${{ secrets.CI_JWT_SECRET_KEY || 'test-secret-key' }}
+  FERN_KEY: ${{ secrets.CI_FERN_KEY || '6nNQ8nL4g5pUQNoT5M1dM2J4RERhTzNnZ2hGc0o1aVk=' }}
+  HOST: ${{ secrets.CI_APP_HOST || '127.0.0.1' }}
+  PORT: ${{ secrets.CI_APP_PORT || '5000' }}
+  ADMIN_USERNAME: ${{ secrets.CI_ADMIN_USERNAME || 'admin' }}
+  ADMIN_EMAIL: ${{ secrets.CI_ADMIN_EMAIL || 'admin@example.com' }}
+  ADMIN_PASSWORD: ${{ secrets.CI_ADMIN_PASSWORD || 'admin1234' }}
   MPLCONFIGDIR: /tmp/matplotlib
 
 jobs:
@@ -45,13 +45,13 @@ jobs:
       postgres:
         image: postgres:18
         env:
-          POSTGRES_DB: tictactoe_test
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: ${{ env.DB_NAME }}
+          POSTGRES_USER: ${{ env.DB_USERNAME }}
+          POSTGRES_PASSWORD: ${{ env.DB_PASSWORD }}
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U postgres -d tictactoe_test"
+          --health-cmd "pg_isready -U ${{ env.DB_USERNAME }} -d ${{ env.DB_NAME }}"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
