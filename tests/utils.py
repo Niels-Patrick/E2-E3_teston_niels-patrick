@@ -76,6 +76,10 @@ def create_user(db: SQLAlchemy) -> User:
     :return: The newly created test user.
     :rtype: User
     """
+    existing_user = get_user_by_username("tuser")
+    if existing_user is not None:
+        return existing_user
+
     player_role = db.session.query(Role).filter_by(name="Player").first()
 
     user = User(

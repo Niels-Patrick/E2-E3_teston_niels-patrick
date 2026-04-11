@@ -2,11 +2,10 @@
 Tests for the ai routes.
 """
 
-import json
+import os
 from flask_jwt_extended import JWTManager
 import pytest
 import sys
-import os
 import torch
 from src.app.db_manager import init_db, database_uri
 import time
@@ -34,6 +33,21 @@ def client(app):
     return app.test_client()
 
 
+@pytest.fixture
+def admin_headers(client):
+    username = os.getenv("ADMIN_USERNAME", "admin")
+    password = os.getenv("ADMIN_PASSWORD", "admin1234")
+
+    response = client.post(
+        "/api/login/",
+        json={"username": username, "password": password}
+    )
+    assert response.status_code == 200
+
+    token = response.get_json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}
+
+
 def test_metrics(client):
     r = client.get("http://localhost:5000/api/monitoring/metrics")
 
@@ -47,16 +61,14 @@ def test_get_last_game_results(client):
     assert r.status_code == 200
 
 
-def test_retrain_model_statuses(client, monkeypatch):
+def test_retrain_model_statuses(client, monkeypatch, admin_headers):
     """
     Test retrain-model endpoint for all status codes: 202 (success), 400 (bad
     request), 409 (already running).
     Stops the model training after asserts.
     """
     # Prepare valid payload and token
-    with open("access_token.json", "r") as json_file:
-        data = json.load(json_file)
-    headers = {"Authorization": f"Bearer {data['access_token']}"}
+    headers = admin_headers
     valid_payload = {
         "populationSize": 2,  # keep it small for test
         "gamesPerEval": 2,
