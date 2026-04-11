@@ -222,6 +222,9 @@ def edit_user() -> Response:
     current_user: User = get_user_by_id(uuid.UUID(access_token.get("sub")))
 
     try:
+        if data.get("password"):
+            data["password"] = hash_password(data.get("password"))
+
         edited_user = UpdateUserSchema().load(  # noqa: F841
             data,
             instance=current_user,
