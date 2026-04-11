@@ -76,11 +76,13 @@ def create_user(db: SQLAlchemy) -> User:
     :return: The newly created test user.
     :rtype: User
     """
+    player_role = db.session.query(Role).filter_by(name="Player").first()
+
     user = User(
         username="tuser",
         password=hash_password('password'),
         email="test.user@gmail.com",
-        id_role="e2ca46c0-abc4-4e0d-ac25-06266f17fdcb"
+        id_role=player_role.id_role
     )
 
     db.session.add(user)
