@@ -16,7 +16,7 @@ cryptography
 bcrypt
 psycopg2-binary
 matplotlib
-mlflow
+mlflow==3.11.1
 prometheus_client
 pytest
 torch
