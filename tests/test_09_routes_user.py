@@ -8,7 +8,8 @@ from flask_jwt_extended import JWTManager
 import pytest
 import sys
 import os
-from src.app.db_manager import init_db, database_uri
+from src.app.db_manager import init_db, db, database_uri
+from src.models.roles import Role
 from src.models.users import get_user_by_username
 
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__) + "/.."))
@@ -34,11 +35,13 @@ def test_add_user(client):
     with open("access_token.json", "r") as json_file:
         data = json.load(json_file)
 
+    player_role = db.session.query(Role).filter_by(name="Player").first()
+
     user = {
         "username": "utest",
         "password": 'password',
         "email": "user.test@gmail.com",
-        "id_role": "c640cf59-9be5-4f54-a72d-62d1327c186b"
+        "id_role": str(player_role.id_role)
     }
 
     response = client.post(
