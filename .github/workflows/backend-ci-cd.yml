@@ -38,7 +38,6 @@ env:
   ADMIN_PASSWORD: ${{ secrets.CI_ADMIN_PASSWORD }}
   MPLCONFIGDIR: /tmp/matplotlib
 
-
 jobs:
   ci:
     name: Pytest
