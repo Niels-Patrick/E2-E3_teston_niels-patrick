@@ -183,10 +183,13 @@ jobs:
               --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
               --name e2-e3-backend \
               --yes
-            az container wait \
-              --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
-              --name e2-e3-backend \
-              --deleted
+
+            for i in $(seq 1 24); do
+              if ! az container show --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} --name e2-e3-backend >/dev/null 2>&1; then
+                break
+              fi
+              sleep 5
+            done
           fi
 
           az container create \
