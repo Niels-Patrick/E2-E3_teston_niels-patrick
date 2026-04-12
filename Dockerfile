@@ -52,5 +52,5 @@ COPY --chown=appuser:appuser . .
 # Expose the port that the application listens on.
 EXPOSE 5000
 
-# Run the application with a production-capable Socket.IO server.
-CMD ["gunicorn", "--worker-class", "geventwebsocket.gunicorn.workers.GeventWebSocketWorker", "--workers", "1", "--bind", "0.0.0.0:5000", "wsgi:app"]
+# Run MLflow DB migrations first, then start the API server.
+CMD ["/bin/sh", "-c", "mlflow db upgrade sqlite:///mlflow.db && exec gunicorn --worker-class geventwebsocket.gunicorn.workers.GeventWebSocketWorker --workers 1 --bind 0.0.0.0:5000 wsgi:app"]
