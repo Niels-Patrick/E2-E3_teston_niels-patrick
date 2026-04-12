@@ -190,7 +190,7 @@ jobs:
               DB_HOST="${{ secrets.CI_DB_HOST }}" \
               DB_PORT="${{ secrets.CI_DB_PORT }}" \
               DB_NAME="${{ secrets.CI_DB_NAME }}" \
-              DB_USER="${{ secrets.CI_DB_USERNAME }}" \
+              DB_USERNAME="${{ secrets.CI_DB_USERNAME }}" \
               FLASK_ENV="production" \
               JWT_TOKEN_LOCATION="${{ secrets.CI_JWT_TOKEN_LOCATION }}" \
               JWT_HEADER_NAME="${{ secrets.CI_JWT_HEADER_NAME }}" \
@@ -219,7 +219,7 @@ jobs:
               DB_HOST="${{ secrets.CI_DB_HOST }}" \
               DB_PORT="${{ secrets.CI_DB_PORT }}" \
               DB_NAME="${{ secrets.CI_DB_NAME }}" \
-              DB_USER="${{ secrets.CI_DB_USERNAME }}" \
+              DB_USERNAME="${{ secrets.CI_DB_USERNAME }}" \
               FLASK_ENV="production" \
               JWT_TOKEN_LOCATION="${{ secrets.CI_JWT_TOKEN_LOCATION }}" \
               JWT_HEADER_NAME="${{ secrets.CI_JWT_HEADER_NAME }}" \
