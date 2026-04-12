@@ -230,6 +230,166 @@ pytest -s
 
 ---
 
+## CI/CD Workflow (GitHub Actions)
+
+This repository uses one GitHub Actions workflow for backend validation and container publishing:
+
+- Workflow file: `.github/workflows/backend-ci-cd.yml`
+- Workflow name: `Backend CI/CD`
+
+This section documents triggers, tools, tasks, setup, configuration, and test procedures.
+
+### Triggers
+
+The workflow runs on:
+
+- Pull request to `main`
+- Push to `main`
+- Manual run from the Actions tab (`workflow_dispatch`)
+
+### Concurrency and Permissions
+
+- Concurrency group: `backend-ci-cd-${{ github.ref }}`
+- Cancel in progress: enabled for the same branch/ref
+- Permissions:
+   - `contents: read`
+   - `packages: write`
+
+### Tools and Actions Used
+
+The workflow uses these GitHub Actions:
+
+- `actions/checkout@v4`: checks out repository code
+- `actions/setup-python@v5`: installs Python 3.11 and enables pip cache
+- `docker/setup-buildx-action@v3`: prepares Docker Buildx
+- `docker/login-action@v3`: authenticates to GitHub Container Registry (GHCR)
+- `docker/metadata-action@v5`: generates image tags and labels
+- `docker/build-push-action@v6`: builds and pushes Docker image
+
+It also uses Docker CLI commands in CI:
+
+- `docker run` to start PostgreSQL for tests
+- `docker exec ... pg_isready` to wait for PostgreSQL readiness
+
+### Jobs and Tasks
+
+#### Job 1: `ci` (Pytest)
+
+This job validates the backend application.
+
+Steps:
+
+1. Check out code.
+2. Start a PostgreSQL container with credentials from GitHub Secrets.
+3. Wait for PostgreSQL to become ready using `pg_isready`.
+4. Set up Python 3.11.
+5. Install dependencies from `requirements.txt`.
+6. Run the test suite with `pytest`.
+
+Expected outcome:
+
+- Tests pass and the job succeeds.
+
+#### Job 2: `publish-image` (Docker image publish)
+
+This job publishes the backend image only after successful tests.
+
+Conditions:
+
+- Runs only when:
+   - event is `push`
+   - branch is `main`
+   - `ci` job succeeded
+
+Steps:
+
+1. Check out code.
+2. Set up Buildx.
+3. Authenticate to GHCR with `GITHUB_TOKEN`.
+4. Generate tags (`latest`, `sha`, branch ref).
+5. Build and push Docker image using `Dockerfile` at repository root.
+
+Expected outcome:
+
+- Image pushed to `ghcr.io/<owner>/e2-e3-tictactoe-api`.
+
+### Installation and Setup Procedure
+
+To enable this workflow in GitHub:
+
+1. Push the repository with `.github/workflows/backend-ci-cd.yml` committed.
+2. Open GitHub repository settings.
+3. Go to `Settings` > `Secrets and variables` > `Actions`.
+4. Add the required repository secrets listed below.
+5. Open `Actions` tab and run the workflow manually once (`workflow_dispatch`) to validate setup.
+
+### Configuration Procedure
+
+Add these repository secrets in GitHub Actions:
+
+- `CI_DB_USERNAME`
+- `CI_DB_PASSWORD`
+- `CI_DB_NAME`
+- `CI_DB_HOST`
+- `CI_DB_PORT`
+- `CI_JWT_TOKEN_LOCATION`
+- `CI_JWT_HEADER_NAME`
+- `CI_JWT_HEADER_TYPE`
+- `CI_JWT_SECRET_KEY`
+- `CI_FERN_KEY`
+- `CI_APP_HOST`
+- `CI_APP_PORT`
+- `CI_ADMIN_USERNAME`
+- `CI_ADMIN_EMAIL`
+- `CI_ADMIN_PASSWORD`
+
+Important:
+
+- Database secrets must match the credentials used when starting PostgreSQL in the `Start PostgreSQL` step.
+- If credentials differ, tests will fail with authentication errors.
+
+### Workflow Test Procedure
+
+Use this checklist to validate the workflow configuration safely.
+
+#### Test 1: Manual run
+
+1. Go to `Actions` in GitHub.
+2. Select `Backend CI/CD`.
+3. Select `Run workflow` on `main`.
+4. Confirm `ci` passes.
+
+#### Test 2: Pull request validation
+
+1. Create a branch.
+2. Make a small non-breaking change (for example a README typo fix).
+3. Open a pull request to `main`.
+4. Confirm workflow runs and `ci` passes.
+5. Confirm `publish-image` is skipped on pull request events.
+
+#### Test 3: Main branch publish
+
+1. Merge a successful pull request into `main`.
+2. Confirm workflow runs on push.
+3. Confirm both jobs succeed.
+4. Confirm image appears in GHCR package list.
+
+### Troubleshooting for CI/CD
+
+- Symptom: PostgreSQL authentication failed
+   - Check `CI_DB_USERNAME`, `CI_DB_PASSWORD`, `CI_DB_NAME` values.
+   - Verify they match what the workflow uses to start PostgreSQL.
+
+- Symptom: Workflow fails before tests start
+   - Check secret names for typos.
+   - Verify all required secrets exist at repository level.
+
+- Symptom: Image publish fails
+   - Check package permissions and registry login step.
+   - Verify job is running on a push to `main`.
+
+---
+
 ## 📂 Repository Structure
 ```
 benchmark.py          # benchmarking utilities
