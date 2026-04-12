@@ -176,8 +176,19 @@ jobs:
           creds: >-
             {"clientId":"${{ secrets.AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_CLIENT_SECRET }}","subscriptionId":"${{ secrets.AZURE_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.AZURE_TENANT_ID }}"}
 
-      - name: Create or update Azure Container Instance
+      - name: Recreate Azure Container Instance
         run: |
+          if az container show --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} --name e2-e3-backend >/dev/null 2>&1; then
+            az container delete \
+              --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
+              --name e2-e3-backend \
+              --yes
+            az container wait \
+              --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
+              --name e2-e3-backend \
+              --deleted
+          fi
+
           az container create \
             --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
             --name e2-e3-backend \
@@ -209,31 +220,7 @@ jobs:
             --memory 1.5 \
             --restart-policy Always \
             --ip-address Public \
-            --dns-name-label e2-e3-backend \
-            --overwrite || \
-          az container update \
-            --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
-            --name e2-e3-backend \
-            --image ${{ env.AZURE_IMAGE_NAME }}:latest \
-            --environment-variables \
-              DB_HOST="${{ secrets.CI_DB_HOST }}" \
-              DB_PORT="${{ secrets.CI_DB_PORT }}" \
-              DB_NAME="${{ secrets.CI_DB_NAME }}" \
-              DB_USERNAME="${{ secrets.CI_DB_USERNAME }}" \
-              FLASK_ENV="production" \
-              JWT_TOKEN_LOCATION="${{ secrets.CI_JWT_TOKEN_LOCATION }}" \
-              JWT_HEADER_NAME="${{ secrets.CI_JWT_HEADER_NAME }}" \
-              JWT_HEADER_TYPE="${{ secrets.CI_JWT_HEADER_TYPE }}" \
-              FERN_KEY="${{ secrets.CI_FERN_KEY }}" \
-              HOST="${{ secrets.CI_APP_HOST }}" \
-              PORT="${{ secrets.CI_APP_PORT }}" \
-              ADMIN_USERNAME="${{ secrets.CI_ADMIN_USERNAME }}" \
-              ADMIN_EMAIL="${{ secrets.CI_ADMIN_EMAIL }}" \
-              MPLCONFIGDIR="/tmp/matplotlib" \
-            --secure-environment-variables \
-              DB_PASSWORD="${{ secrets.CI_DB_PASSWORD }}" \
-              JWT_SECRET_KEY="${{ secrets.CI_JWT_SECRET_KEY }}" \
-              ADMIN_PASSWORD="${{ secrets.CI_ADMIN_PASSWORD }}"
+            --dns-name-label e2-e3-backend
 
       - name: Get container FQDN
         run: |
