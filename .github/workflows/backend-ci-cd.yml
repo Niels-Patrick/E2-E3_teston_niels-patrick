@@ -195,6 +195,7 @@ jobs:
           az container create \
             --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
             --name e2-e3-backend \
+            --os-type Linux \
             --image ${{ env.AZURE_IMAGE_NAME }}:latest \
             --registry-login-server ${{ secrets.AZURE_CONTAINER_REGISTRY }}.azurecr.io \
             --registry-username ${{ secrets.AZURE_REGISTRY_USERNAME }} \
