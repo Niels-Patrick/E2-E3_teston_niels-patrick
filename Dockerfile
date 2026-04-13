@@ -16,6 +16,7 @@ ENV PYTHONDONTWRITEBYTECODE=1
 # the application crashes without emitting any logs due to buffering.
 ENV PYTHONUNBUFFERED=1
 ENV MPLCONFIGDIR=/tmp/matplotlib
+ENV GIT_PYTHON_REFRESH=quiet
 
 WORKDIR /app
 

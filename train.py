@@ -3,6 +3,8 @@ import mlflow
 import torch
 import os
 import matplotlib.pyplot as plt
+from pathlib import Path
+from mlflow.tracking import MlflowClient
 from src.ai.brain import Brain, load_params
 from src.ai.genetic_algorithm import GeneticTrainer
 from src.app.logger_manager import logger_manager
@@ -14,6 +16,42 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Using device: {DEVICE}")
 
 
+def _configure_mlflow_experiment() -> str:
+    """Configure MLflow experiment with a Linux-safe artifact location."""
+    tracking_uri = "sqlite:///mlflow.db"
+    base_experiment_name = "tic_tac_toe_ga"
+
+    mlflow.set_tracking_uri(tracking_uri)
+    artifact_root_uri = (Path.cwd() / "mlruns").resolve().as_uri()
+    client = MlflowClient(tracking_uri=tracking_uri)
+
+    experiment = client.get_experiment_by_name(base_experiment_name)
+
+    # If an experiment was created on Windows previously, artifact location
+    # can point to C:/... and fail in Linux containers.
+    if experiment is not None and experiment.artifact_location:
+        artifact_location = experiment.artifact_location.lower()
+        if "c:/" in artifact_location or "file:///c:" in artifact_location:
+            fallback_name = f"{base_experiment_name}_linux"
+            fallback_experiment = client.get_experiment_by_name(fallback_name)
+            if fallback_experiment is None:
+                client.create_experiment(
+                    name=fallback_name,
+                    artifact_location=artifact_root_uri,
+                )
+            mlflow.set_experiment(fallback_name)
+            return fallback_name
+
+    if experiment is None:
+        client.create_experiment(
+            name=base_experiment_name,
+            artifact_location=artifact_root_uri,
+        )
+
+    mlflow.set_experiment(base_experiment_name)
+    return base_experiment_name
+
+
 def main(
         population_size: int = 100,
         games_per_eval: int = 60,
@@ -21,8 +59,8 @@ def main(
         mutation_std: float = 0.15,
         generations: int = 200
 ) -> str:
-    mlflow.set_tracking_uri("sqlite:///mlflow.db")
-    mlflow.set_experiment("tic_tac_toe_ga")
+    experiment_name = _configure_mlflow_experiment()
+    logger_manager.info(f"Using MLflow experiment: {experiment_name}")
 
     with mlflow.start_run():
         try:
