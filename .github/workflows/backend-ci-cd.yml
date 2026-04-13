@@ -127,6 +127,23 @@ jobs:
           creds: >-
             {"clientId":"${{ secrets.AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_CLIENT_SECRET }}","subscriptionId":"${{ secrets.AZURE_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.AZURE_TENANT_ID }}"}
 
+      - name: Validate Azure database secrets
+        run: |
+          if [ -z "${{ secrets.AZURE_DB_HOST }}" ]; then
+            echo "AZURE_DB_HOST is empty"
+            exit 1
+          fi
+
+          if [ "${{ secrets.AZURE_DB_HOST }}" = "localhost" ] || [ "${{ secrets.AZURE_DB_HOST }}" = "127.0.0.1" ]; then
+            echo "AZURE_DB_HOST cannot be localhost or 127.0.0.1 for Azure Container Instances"
+            exit 1
+          fi
+
+          if [ -z "${{ secrets.AZURE_DB_NAME }}" ] || [ -z "${{ secrets.AZURE_DB_USERNAME }}" ] || [ -z "${{ secrets.AZURE_DB_PASSWORD }}" ] || [ -z "${{ secrets.AZURE_DB_PORT }}" ]; then
+            echo "One or more Azure DB secrets are missing: AZURE_DB_NAME, AZURE_DB_USERNAME, AZURE_DB_PASSWORD, AZURE_DB_PORT"
+            exit 1
+          fi
+
       - name: Ensure Azure CLI login to ACR
         run: az acr login --name ${{ secrets.AZURE_CONTAINER_REGISTRY }}
 
@@ -202,10 +219,10 @@ jobs:
             --registry-password ${{ secrets.AZURE_REGISTRY_PASSWORD }} \
             --ports 5000 \
             --environment-variables \
-              DB_HOST="${{ secrets.CI_DB_HOST }}" \
-              DB_PORT="${{ secrets.CI_DB_PORT }}" \
-              DB_NAME="${{ secrets.CI_DB_NAME }}" \
-              DB_USERNAME="${{ secrets.CI_DB_USERNAME }}" \
+              DB_HOST="${{ secrets.AZURE_DB_HOST }}" \
+              DB_PORT="${{ secrets.AZURE_DB_PORT }}" \
+              DB_NAME="${{ secrets.AZURE_DB_NAME }}" \
+              DB_USERNAME="${{ secrets.AZURE_DB_USERNAME }}" \
               FLASK_ENV="production" \
               JWT_TOKEN_LOCATION="${{ secrets.CI_JWT_TOKEN_LOCATION }}" \
               JWT_HEADER_NAME="${{ secrets.CI_JWT_HEADER_NAME }}" \
@@ -217,7 +234,7 @@ jobs:
               ADMIN_EMAIL="${{ secrets.CI_ADMIN_EMAIL }}" \
               MPLCONFIGDIR="/tmp/matplotlib" \
             --secure-environment-variables \
-              DB_PASSWORD="${{ secrets.CI_DB_PASSWORD }}" \
+              DB_PASSWORD="${{ secrets.AZURE_DB_PASSWORD }}" \
               JWT_SECRET_KEY="${{ secrets.CI_JWT_SECRET_KEY }}" \
               ADMIN_PASSWORD="${{ secrets.CI_ADMIN_PASSWORD }}" \
             --cpu 1 \
