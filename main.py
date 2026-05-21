@@ -55,6 +55,7 @@ def create_app():
     return application
 
 
+
 # Main entry point
 if __name__ == '__main__':
     start_metrics_server()
